@@ -112,13 +112,13 @@ function pintarCabecera(camino) {
   const u = sesion.usuario();
   const enlaces = u
     ? [
-      ['#/panel', 'Mis cursos'],
-      ['#/notas', 'Mis notas'],
-      ...(sesion.esAdmin() ? [['#/admin', 'Administración']] : []),
+      ['#/panel', 'Mis cursos', 'libro'],
+      ['#/notas', 'Mis notas', 'grafica'],
+      ...(sesion.esAdmin() ? [['#/admin', 'Administración', 'ajustes']] : []),
     ]
     : [
-      ['#/', 'Inicio'],
-      ['#/acceso', 'Acceso alumnos'],
+      ['#/', 'Inicio', 'casa'],
+      ['#/acceso', 'Acceso alumnos', 'usuario'],
     ];
   const activo = (href) => {
     const destino = href.slice(1);
@@ -126,31 +126,68 @@ function pintarCabecera(camino) {
   };
 
   cabecera.innerHTML = `
-    <div class="contenedor barra">
-      <a class="marca" href="${u ? '#/panel' : '#/'}">
-        ${icono('salvavidas', 'marca-icono')}
-        <span>${esc(ESCUELA.nombre)}</span>
-      </a>
-      <button class="boton-menu" type="button" aria-expanded="false" aria-controls="menu">Menú</button>
-      <nav id="menu" class="menu" aria-label="Principal">
-        ${enlaces.map(([href, texto]) => `<a href="${href}" ${activo(href) ? 'aria-current="page"' : ''}>${esc(texto)}</a>`).join('')}
-        ${u ? `<span class="usuario-actual" title="${esc(u.email)}">${esc(u.nombre)}</span>
-               <button type="button" class="enlace" data-salir>Salir</button>` : ''}
-      </nav>
-    </div>`;
+    <a class="marca" href="${u ? '#/panel' : '#/'}">${icono('salvavidas')}<span>${esc(ESCUELA.nombre)}</span></a>
+    <nav class="nav" aria-label="Principal">
+      ${enlaces.map(([href, texto, ico]) => `
+        <a class="nav-item" href="${href}" ${activo(href) ? 'aria-current="page"' : ''}>${icono(ico)}<span class="nav-texto">${esc(texto)}</span></a>`)
+        .join('<span class="nav-punto" aria-hidden="true"></span>')}
+    </nav>
+    ${u ? `
+      <div class="usuario">
+        <button type="button" class="usuario-boton" aria-expanded="false" aria-haspopup="true" aria-label="Tu cuenta">${icono('usuario')}</button>
+        <div class="usuario-menu" hidden>
+          <p class="usuario-nombre">${esc(u.nombre)}</p>
+          <p class="usuario-email">${esc(u.email)}</p>
+          <button type="button" class="usuario-opcion" data-tema>${icono(temaActual() === 'light' ? 'luna' : 'sol')}<span>${temaActual() === 'light' ? 'Tema oscuro' : 'Tema claro'}</span></button>
+          <button type="button" class="usuario-opcion peligro" data-salir>${icono('salir')}<span>Cerrar sesión</span></button>
+        </div>
+      </div>` : `
+      <button type="button" class="usuario-boton tema-suelto" data-tema aria-label="${temaActual() === 'light' ? 'Tema oscuro' : 'Tema claro'}">${icono(temaActual() === 'light' ? 'luna' : 'sol')}</button>`}`;
 
-  const boton = cabecera.querySelector('.boton-menu');
-  const menu = cabecera.querySelector('.menu');
-  boton.addEventListener('click', () => {
-    const abierto = menu.classList.toggle('abierto');
-    boton.setAttribute('aria-expanded', String(abierto));
+  const boton = cabecera.querySelector('.usuario > .usuario-boton');
+  boton?.addEventListener('click', () => {
+    const menu = cabecera.querySelector('.usuario-menu');
+    menu.hidden = !menu.hidden;
+    boton.setAttribute('aria-expanded', String(!menu.hidden));
   });
+
+  for (const b of cabecera.querySelectorAll('[data-tema]')) {
+    b.addEventListener('click', () => {
+      cambiarTema(temaActual() === 'light' ? 'dark' : 'light');
+      pintarCabecera(camino);
+    });
+  }
   cabecera.querySelector('[data-salir]')?.addEventListener('click', () => {
     if (vistaActual?.puedeSalir && !vistaActual.puedeSalir()) return;
     vistaActual = null;
     sesion.salir();
     location.hash = '#/';
   });
+}
+
+function cerrarMenuUsuario() {
+  const menu = cabecera.querySelector('.usuario-menu');
+  if (!menu || menu.hidden) return;
+  menu.hidden = true;
+  cabecera.querySelector('.usuario > .usuario-boton')?.setAttribute('aria-expanded', 'false');
+}
+document.addEventListener('click', (e) => { if (!e.target.closest?.('.usuario')) cerrarMenuUsuario(); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') cerrarMenuUsuario(); });
+
+// Tema claro u oscuro (oscuro por defecto). js/tema-previo.js lo aplica antes de pintar.
+function temaActual() {
+  return document.documentElement.dataset.theme === 'light' ? 'light' : 'dark';
+}
+
+function cambiarTema(tema) {
+  if (tema === 'light') document.documentElement.dataset.theme = 'light';
+  else delete document.documentElement.dataset.theme;
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', tema === 'light' ? '#FFFFFF' : '#000000');
+  try {
+    localStorage.setItem('escuela.tema', tema);
+  } catch {
+    // Sin almacenamiento: el tema dura hasta recargar.
+  }
 }
 
 function pintarPie() {

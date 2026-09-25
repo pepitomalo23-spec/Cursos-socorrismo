@@ -21,20 +21,18 @@ export async function render(el, { params }) {
   const totalPreguntas = Object.values(cuentas).reduce((a, b) => a + b, 0);
 
   el.innerHTML = `
-    <section class="contenedor seccion">
+    <section class="contenedor">
       <nav class="migas" aria-label="Ruta"><a href="#/panel">Mis cursos</a></nav>
       <h1>${esc(curso.titulo)}</h1>
       <p class="entradilla">${esc(curso.descripcion)}</p>
       <div class="acciones">
         ${totalPreguntas
-          ? `<a class="boton" href="#/test?curso=${esc(curso.id)}">${icono('test')} Hacer un test del curso</a>`
+          ? `<a class="btn btn-confirmar" href="#/test?curso=${esc(curso.id)}">${icono('test')} Hacer un test del curso</a>`
           : ''}
-        <span class="apagado">${plural(temas.length, 'tema', 'temas')} · ${plural(totalPreguntas, 'pregunta', 'preguntas')}</span>
+        <span class="dato-mono">${plural(temas.length, 'tema', 'temas')} · ${plural(totalPreguntas, 'pregunta', 'preguntas')}</span>
       </div>
-    </section>
 
-    <section class="contenedor seccion">
-      <h2>Temario</h2>
+      <div class="seccion-fila"><h2>Temario</h2></div>
       ${temas.length ? `
         <ol class="temario">
           ${temas.map((t, i) => {
@@ -50,7 +48,7 @@ export async function render(el, { params }) {
                   <span class="tema-progreso" title="Aciertos en tus tests de este tema">
                     ${pct == null
                       ? `<span class="apagado">${plural(cuentas[t.id], 'pregunta', 'preguntas')}</span>`
-                      : `<span class="barra-progreso" style="--valor:${pct}%"><span></span></span><span>${pct}%</span>`}
+                      : `<span class="barra-progreso ${pct < 50 ? 'baja' : ''}" style="--valor:${pct}%"><span></span></span><span class="tema-pct">${pct}%</span>`}
                   </span>
                 </a>
               </li>`;

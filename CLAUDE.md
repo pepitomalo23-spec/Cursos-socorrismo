@@ -9,3 +9,4 @@ tests and grades. The user writes in Spanish; code, comments and UI text are in 
   localStorage; Supabase will replace its internals only. `supabase/esquema.sql` is a draft, not applied.
 - Everything interpolated into HTML must go through `esc()`; user-provided URLs through `urlSegura()`.
 - Brand name and contact live in `js/config.js`.
+- Visual design mirrors pj.fire (repo pepitomalo23-spec/Test): same tokens (`--bg`, `--card`, `--line`, `--purple`, `--coral`…), fonts (Anton titles, Inter text, Source Serif 4 questions, JetBrains Mono numbers), dark by default with `data-theme="light"`. Keep new UI consistent with it.

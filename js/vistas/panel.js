@@ -1,9 +1,9 @@
-// Panel del alumno: sus cursos y sus últimos tests.
+// Panel del alumno: sus cursos (tarjetas como las de pj.fire) y sus últimos tests.
 
 import * as almacen from '../almacen.js';
 import * as sesion from '../sesion.js';
 import { resumen } from '../estadisticas.js';
-import { chipNota, esc, fecha, icono, nota, plural, titulo } from '../utiles.js';
+import { chipNota, esc, estiloCurso, fecha, icono, nota, plural, titulo } from '../utiles.js';
 
 export async function render(el) {
   titulo('Mis cursos');
@@ -15,47 +15,39 @@ export async function render(el) {
   const tarjetas = await Promise.all(cursos.map(async (c) => {
     const temas = await almacen.temas(c.id);
     const r = resumen(intentos.filter((i) => i.cursoId === c.id));
+    const [color, ico] = estiloCurso(todos.findIndex((x) => x.id === c.id));
     return `
-      <a class="tarjeta tarjeta-enlace" href="#/curso/${esc(c.id)}">
-        <h3>${esc(c.titulo)}</h3>
-        <p class="apagado">${plural(temas.length, 'tema', 'temas')}</p>
-        <dl class="cifras">
-          <div><dt>Tests</dt><dd>${r.tests}</dd></div>
-          <div><dt>Media</dt><dd>${nota(r.media)}</dd></div>
-          <div><dt>Mejor</dt><dd>${nota(r.mejor)}</dd></div>
-        </dl>
-        <span class="mas-info">Entrar ${icono('flecha')}</span>
+      <a class="modo color-${color}" href="#/curso/${esc(c.id)}">
+        <span class="modo-emblema">${icono(ico)}</span>
+        <span class="modo-nombre">${esc(c.titulo)}</span>
+        <span class="modo-sub">${plural(temas.length, 'tema', 'temas')}${r.tests ? ` · media <b>${nota(r.media)}</b>` : ''}</span>
       </a>`;
   }));
 
   const nombres = Object.fromEntries(todos.map((c) => [c.id, c.titulo]));
 
   el.innerHTML = `
-    <section class="contenedor seccion">
+    <section class="contenedor">
       <h1>Hola, ${esc(u.nombre.split(' ')[0])}</h1>
-      <h2>Mis cursos</h2>
       ${cursos.length
-        ? `<div class="rejilla rejilla-2">${tarjetas.join('')}</div>`
-        : '<p class="caja-info">Todavía no estás matriculado en ningún curso. Habla con la escuela para que te den acceso.</p>'}
-    </section>
+        ? `<div class="modos">${tarjetas.join('')}</div>`
+        : '<p class="vacio">Todavía no tienes acceso a ningún curso.<br>La escuela te lo dará en cuanto se confirme tu matrícula.</p>'}
 
-    <section class="contenedor seccion">
-      <div class="titulo-con-accion">
-        <h2>Últimos tests</h2>
-        ${intentos.length ? '<a href="#/notas">Ver todas mis notas</a>' : ''}
+      <div class="seccion-fila">
+        <h2>Historial</h2>
+        ${intentos.length ? '<a class="seccion-enlace" href="#/notas">Ver todo</a>' : ''}
       </div>
       ${intentos.length ? `
-        <ul class="lista">
+        <div class="historial">
           ${intentos.slice(0, 5).map((i) => `
-            <li>
-              <a class="fila-enlace" href="#/intento/${esc(i.id)}">
-                <span>
-                  <strong>${esc(i.temaTitulos.length === 1 ? i.temaTitulos[0] : nombres[i.cursoId] ?? i.cursoTitulo)}</strong>
-                  <span class="apagado">${fecha(i.fecha)} · ${i.aciertos}/${i.total} aciertos</span>
-                </span>
-                ${chipNota(i.nota)}
-              </a>
-            </li>`).join('')}
-        </ul>` : '<p class="apagado">Aún no has hecho ningún test. Entra en un curso y prueba el primero.</p>'}
+            <a class="hist-item" href="#/intento/${esc(i.id)}">
+              <span class="hist-icono">${icono('test')}</span>
+              <span class="hist-texto">
+                <strong>${esc(i.temaTitulos.length === 1 ? i.temaTitulos[0] : nombres[i.cursoId] ?? i.cursoTitulo)}</strong>
+                <span>${fecha(i.fecha)} · ${i.aciertos}/${i.total} aciertos</span>
+              </span>
+              ${chipNota(i.nota)}
+            </a>`).join('')}
+        </div>` : '<p class="vacio">Aún no has hecho ningún test. Entra en un curso y prueba el primero.</p>'}
     </section>`;
 }

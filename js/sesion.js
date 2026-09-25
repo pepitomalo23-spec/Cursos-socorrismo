@@ -1,9 +1,10 @@
 // Sesión del usuario.
 //
 // En la demostración basta con el correo (la contraseña no se comprueba). Con Supabase
-// se usará Supabase Auth y aquí solo cambiarán entrar() y salir().
+// se usará Supabase Auth y aquí solo cambiarán entrar(), registrar() y salir().
 
 import * as almacen from './almacen.js';
+import { nuevoId } from './utiles.js';
 
 const CLAVE = 'escuela.sesion.v1';
 
@@ -43,6 +44,23 @@ export function puedeVerCurso(cursoId) {
 export async function entrar(email, _clave) {
   const u = await almacen.usuarioPorEmail(email);
   if (!u) throw new Error('No hay ninguna cuenta con ese correo.');
+  escribir(u);
+  return u;
+}
+
+// Alta de un alumno nuevo. Entra sin cursos: la escuela le da acceso desde Administración.
+export async function registrar(nombre, email, _clave) {
+  const limpio = email.trim().toLowerCase();
+  if (!nombre.trim()) throw new Error('Escribe tu nombre.');
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(limpio)) throw new Error('El correo electrónico no es válido.');
+  if (await almacen.usuarioPorEmail(limpio)) throw new Error('Ya hay una cuenta con ese correo. Inicia sesión.');
+  const u = await almacen.guardarUsuario({
+    id: nuevoId('u-'),
+    nombre: nombre.trim(),
+    email: limpio,
+    rol: 'alumno',
+    cursos: [],
+  });
   escribir(u);
   return u;
 }

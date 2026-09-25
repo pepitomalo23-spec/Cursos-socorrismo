@@ -3,7 +3,7 @@
 import { NOTA_APROBADO } from '../config.js';
 import * as almacen from '../almacen.js';
 import * as sesion from '../sesion.js';
-import { chipNota, esc, fechaHora, pantallaVacia, titulo } from '../utiles.js';
+import { esc, fechaHora, nota, pantallaVacia, titulo } from '../utiles.js';
 
 const LETRAS = 'abcdefghij';
 
@@ -42,32 +42,26 @@ export async function render(el, { params }) {
         ${deOtro ? '<a href="#/admin/notas">Notas de los alumnos</a>' : '<a href="#/notas">Mis notas</a>'}
       </nav>
       <div class="resultado ${aprobado ? 'aprobado' : 'suspenso'}">
-        <div class="resultado-nota">
-          <span class="resultado-numero">${chipNota(i.nota)}</span>
-          <span>${aprobado ? 'Aprobado' : 'Suspenso'}</span>
-        </div>
-        <div>
-          <h1>${esc(i.temaTitulos.length === 1 ? i.temaTitulos[0] : i.cursoTitulo)}</h1>
-          <p class="apagado">
-            ${deOtro ? `${esc(i.usuarioNombre)} · ` : ''}${fechaHora(i.fecha)}
-            ${duracion(i.inicio, i.fecha) ? ` · ${duracion(i.inicio, i.fecha)}` : ''}
-            ${i.penaliza ? ' · los fallos restan' : ''}
-          </p>
-          <dl class="cifras">
-            <div><dt>Aciertos</dt><dd class="bien">${i.aciertos}</dd></div>
-            <div><dt>Fallos</dt><dd class="mal">${i.fallos}</dd></div>
-            <div><dt>En blanco</dt><dd>${i.blancos}</dd></div>
-          </dl>
-        </div>
+        <p class="resultado-etiqueta">${aprobado ? 'Aprobado' : 'Suspenso'}</p>
+        <p class="resultado-nota">${nota(i.nota)}<span>/10</span></p>
+        <h1>${esc(i.temaTitulos.length === 1 ? i.temaTitulos[0] : i.cursoTitulo)}</h1>
+        <p class="resultado-meta">
+          ${deOtro ? `${esc(i.usuarioNombre)} · ` : ''}${fechaHora(i.fecha)}${duracion(i.inicio, i.fecha) ? ` · ${duracion(i.inicio, i.fecha)}` : ''}${i.penaliza ? ' · los fallos restan' : ''}
+        </p>
       </div>
+      <dl class="cifras-grandes cifras-3">
+        <div><dt>Aciertos</dt><dd class="verde">${i.aciertos}</dd></div>
+        <div><dt>Fallos</dt><dd class="coral">${i.fallos}</dd></div>
+        <div><dt>En blanco</dt><dd>${i.blancos}</dd></div>
+      </dl>
 
       ${deOtro ? '' : `
-        <div class="acciones">
-          <a class="boton" href="#/test?curso=${esc(i.cursoId)}&temas=${esc(i.temaIds.join(','))}">Otro test de ${i.temaIds.length === 1 ? 'este tema' : 'estos temas'}</a>
-          ${repasar.length ? `<a class="boton boton-secundario" href="#/test?curso=${esc(i.cursoId)}&preguntas=${esc(repasar.join(','))}">Repasar mis ${repasar.length} fallos y en blanco</a>` : ''}
+        <div class="acciones acciones-bloque">
+          <a class="btn btn-confirmar" href="#/test?curso=${esc(i.cursoId)}&temas=${esc(i.temaIds.join(','))}">Otro test de ${i.temaIds.length === 1 ? 'este tema' : 'estos temas'}</a>
+          ${repasar.length ? `<a class="btn btn-fantasma" href="#/test?curso=${esc(i.cursoId)}&preguntas=${esc(repasar.join(','))}">Repasar mis ${repasar.length} fallos y en blanco</a>` : ''}
         </div>`}
 
-      <h2>Revisión</h2>
+      <div class="seccion-fila"><h2>Revisión</h2></div>
       <div class="segmentado filtros" role="group" aria-label="Mostrar">
         ${FILTROS.map(([id, texto, cumple]) => `
           <label><input type="radio" name="filtro" value="${id}" ${id === filtro ? 'checked' : ''}>
@@ -92,7 +86,7 @@ export async function render(el, { params }) {
               if (o === p.correcta) clases.push('correcta');
               if (o === p.elegida && o !== p.correcta) clases.push('incorrecta');
               const marca = o === p.correcta ? ' ✓' : o === p.elegida ? ' ✗' : '';
-              return `<li class="${clases.join(' ')}"><span class="letra">${LETRAS[pos]}</span> <span>${esc(p.opciones[o])}${marca ? `<span class="marca">${marca}</span>` : ''}</span></li>`;
+              return `<li class="${clases.join(' ')}"><span class="letra">${LETRAS[pos].toUpperCase()}</span> <span>${esc(p.opciones[o])}${marca ? `<span class="marca-respuesta">${marca}</span>` : ''}</span></li>`;
             }).join('')}
           </ul>
           ${estado === 'blanco' ? '<p class="apagado">Sin responder.</p>' : ''}

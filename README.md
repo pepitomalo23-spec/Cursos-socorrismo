@@ -2,7 +2,9 @@
 
 Web propia de la escuela: portada pública con los cursos y, para los alumnos, el temario,
 los tests y las notas. Es una web estática (HTML, CSS y JavaScript, sin paso de compilación)
-pensada para publicarse en Vercel.
+pensada para publicarse en Vercel. El diseño sigue el de pj.fire: fondo negro (con tema claro
+opcional), tarjetas con borde fino y las mismas tipografías (Anton, Inter, Source Serif 4 y
+JetBrains Mono, desde Google Fonts).
 
 > **Estado: demostración.** Todavía no hay base de datos: todo se guarda en el navegador
 > (`localStorage`), así que cada navegador tiene su propia copia de los cursos, alumnos y notas.
@@ -11,6 +13,7 @@ pensada para publicarse en Vercel.
 ## Qué hace
 
 **Alumnos**
+- Pueden crear su cuenta; entran sin cursos hasta que la escuela les da acceso.
 - Ven solo los cursos en los que están matriculados.
 - Temario por temas: texto con apartados y listas, y material (PDF, vídeos, enlaces).
 - Tests por tema o de varios temas: número de preguntas, modo estudio (corrige al momento
@@ -29,17 +32,18 @@ pensada para publicarse en Vercel.
 
 ```
 index.html              esqueleto de la página
-css/estilos.css         todos los estilos (tema claro y oscuro)
+css/estilos.css         todos los estilos (tema oscuro por defecto y claro)
+js/tema-previo.js       aplica el tema guardado antes de pintar (script normal, en <head>)
 js/config.js            nombre de la escuela, contacto, nota de aprobado, penalización
 js/app.js               arranque y navegación entre pantallas (direcciones #/…)
 js/almacen.js           lectura y guardado de datos (el único archivo que cambiará con Supabase)
-js/sesion.js            inicio y cierre de sesión
+js/sesion.js            inicio de sesión, alta de alumnos y cierre de sesión
 js/datos-demo.js        cursos, temas, preguntas y alumnos de ejemplo
 js/estadisticas.js      medias y aciertos por tema
 js/utiles.js            utilidades comunes (escapar HTML, formato de notas, iconos…)
 js/vistas/              una pantalla por archivo
   inicio.js             portada pública
-  acceso.js             inicio de sesión
+  acceso.js             inicio de sesión y crear cuenta
   panel.js              «Mis cursos»
   curso.js              temario de un curso
   tema.js               un tema

@@ -26,7 +26,7 @@ export async function render(el, { params }) {
   const recursos = (tema.recursos ?? []).map((r) => ({ ...r, url: urlSegura(r.url) }));
 
   el.innerHTML = `
-    <article class="contenedor estrecho seccion">
+    <article class="contenedor estrecho">
       <nav class="migas" aria-label="Ruta">
         <a href="#/panel">Mis cursos</a>
         <a href="#/curso/${esc(curso.id)}">${esc(curso.titulo)}</a>
@@ -57,7 +57,7 @@ export async function render(el, { params }) {
             <h2>Pon a prueba lo que has aprendido</h2>
             <p class="apagado">${plural(numPreguntas, 'pregunta', 'preguntas')} de este tema</p>
           </div>
-          <a class="boton" href="#/test?curso=${esc(curso.id)}&temas=${esc(tema.id)}">${icono('test')} Hacer el test del tema</a>
+          <a class="btn btn-confirmar" href="#/test?curso=${esc(curso.id)}&temas=${esc(tema.id)}">${icono('test')} Hacer el test del tema</a>
         </div>` : ''}
 
       <nav class="paginacion" aria-label="Temas">

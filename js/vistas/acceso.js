@@ -1,61 +1,67 @@
-// Inicio de sesión.
+// Inicio de sesión y alta de alumnos (mismo sistema de cuentas: sesion.js).
 
 import * as sesion from '../sesion.js';
-import { esc, titulo } from '../utiles.js';
+import { titulo } from '../utiles.js';
 
 export async function render(el, { query }) {
-  titulo('Acceso alumnos');
-  el.innerHTML = `
-    <section class="contenedor estrecho seccion">
-      <h1>Acceso alumnos</h1>
-      <form class="formulario tarjeta" novalidate>
-        <label>Correo electrónico
-          <input type="email" name="email" autocomplete="email" required>
-        </label>
-        <label>Contraseña
-          <input type="password" name="clave" autocomplete="current-password">
-        </label>
-        <p class="error" role="alert" hidden></p>
-        <button class="boton" type="submit">Entrar</button>
-      </form>
-      <div class="caja-info">
-        <p><strong>Demostración.</strong> Entra con una de estas cuentas (vale cualquier contraseña):</p>
-        <ul>
-          <li><button type="button" class="enlace" data-email="alumno@demo.es">alumno@demo.es</button> — alumna</li>
-          <li><button type="button" class="enlace" data-email="admin@demo.es">admin@demo.es</button> — administración</li>
-        </ul>
-      </div>
-    </section>`;
+  let modo = query.get('modo') === 'registro' ? 'registro' : 'entrar';
 
-  const form = el.querySelector('form');
-  const error = el.querySelector('.error');
+  function pintar() {
+    const registro = modo === 'registro';
+    titulo(registro ? 'Crear cuenta' : 'Acceso alumnos');
+    el.innerHTML = `
+      <section class="acceso">
+        <form class="panel-acceso" novalidate>
+          <h1 class="acceso-titulo">${registro ? 'Crear cuenta' : 'Acceso alumnos'}</h1>
+          <p class="acceso-sub">${registro
+            ? 'Crea tu cuenta y la escuela te dará acceso a tus cursos.'
+            : 'Inicia sesión para ver tu temario, hacer tests y consultar tus notas.'}</p>
+          ${registro ? '<input class="acceso-campo" name="nombre" placeholder="Nombre y apellidos" autocomplete="name" aria-label="Nombre y apellidos">' : ''}
+          <input class="acceso-campo" name="email" type="email" inputmode="email" placeholder="Correo electrónico" autocomplete="email" autocapitalize="off" spellcheck="false" aria-label="Correo electrónico">
+          <input class="acceso-campo" name="clave" type="password" placeholder="Contraseña" autocomplete="${registro ? 'new-password' : 'current-password'}" aria-label="Contraseña">
+          <p class="acceso-error" role="alert"></p>
+          <div class="acceso-botones">
+            <button class="btn btn-claro btn-bloque" type="submit">${registro ? 'Crear cuenta' : 'Iniciar sesión'}</button>
+            <button class="btn btn-fantasma btn-bloque" type="button" data-cambiar>${registro ? 'Ya tengo cuenta' : 'Crear cuenta'}</button>
+          </div>
+          ${registro ? '' : `
+            <div class="acceso-separador">demostración</div>
+            <p class="acceso-demo">Entra con <button type="button" class="enlace" data-email="alumno@demo.es">alumno@demo.es</button>
+            o <button type="button" class="enlace" data-email="admin@demo.es">admin@demo.es</button> (vale cualquier contraseña).</p>`}
+        </form>
+      </section>`;
 
-  for (const b of el.querySelectorAll('[data-email]')) {
-    b.addEventListener('click', () => {
-      form.email.value = b.dataset.email;
-      form.clave.focus();
+    const form = el.querySelector('form');
+    const error = el.querySelector('.acceso-error');
+
+    el.querySelector('[data-cambiar]').addEventListener('click', () => {
+      modo = registro ? 'entrar' : 'registro';
+      pintar();
     });
+    for (const b of el.querySelectorAll('[data-email]')) {
+      b.addEventListener('click', () => {
+        form.email.value = b.dataset.email;
+        form.clave.focus();
+      });
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      error.textContent = '';
+      const email = form.email.value.trim();
+      try {
+        if (!email) throw new Error('Escribe tu correo electrónico.');
+        if (registro) await sesion.registrar(form.nombre.value, email, form.clave.value);
+        else await sesion.entrar(email, form.clave.value);
+        const volver = query.get('volver');
+        location.hash = volver && !volver.startsWith('/acceso') ? `#${volver}` : '#/panel';
+      } catch (err) {
+        error.textContent = err.message;
+      }
+    });
+
+    (registro ? form.nombre : form.email).focus();
   }
 
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    error.hidden = true;
-    const email = form.email.value.trim();
-    if (!email) {
-      error.textContent = 'Escribe tu correo electrónico.';
-      error.hidden = false;
-      form.email.focus();
-      return;
-    }
-    try {
-      await sesion.entrar(email, form.clave.value);
-      const volver = query.get('volver');
-      location.hash = volver && volver !== '/acceso' ? `#${volver}` : '#/panel';
-    } catch (err) {
-      error.innerHTML = esc(err.message);
-      error.hidden = false;
-    }
-  });
-
-  form.email.focus();
+  pintar();
 }

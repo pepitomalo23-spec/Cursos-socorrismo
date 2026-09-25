@@ -158,7 +158,7 @@ export async function editar(el, { id }) {
         <div>
           <p><strong>${esc(p.enunciado)}</strong></p>
           <ol class="opciones-admin" type="a">
-            ${p.opciones.map((o, i) => `<li class="${i === p.correcta ? 'correcta' : ''}">${esc(o)}${i === p.correcta ? ' <span class="marca">✓</span>' : ''}</li>`).join('')}
+            ${p.opciones.map((o, i) => `<li class="${i === p.correcta ? 'correcta' : ''}">${esc(o)}${i === p.correcta ? ' <span class="marca-respuesta">✓</span>' : ''}</li>`).join('')}
           </ol>
         </div>
         <span class="fila-admin-botones">

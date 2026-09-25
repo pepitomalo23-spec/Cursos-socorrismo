@@ -63,13 +63,13 @@ async function configurar(el, control, { curso, temas, preseleccion }) {
     </nav>`;
 
   if (!conPreguntas.length) {
-    el.innerHTML = `<section class="contenedor estrecho seccion">${migas}<h1>Nuevo test</h1>
-      <p class="caja-info">Este curso todavía no tiene preguntas.</p></section>`;
+    el.innerHTML = `<section class="contenedor estrecho">${migas}<h1>Nuevo test</h1>
+      <p class="vacio">Este curso todavía no tiene preguntas.</p></section>`;
     return;
   }
 
   el.innerHTML = `
-    <section class="contenedor estrecho seccion">
+    <section class="contenedor estrecho">
       ${migas}
       <h1>Nuevo test</h1>
       <form class="formulario tarjeta" novalidate>
@@ -107,7 +107,7 @@ async function configurar(el, control, { curso, temas, preseleccion }) {
         </fieldset>
 
         <p class="resumen-test" aria-live="polite"></p>
-        <button class="boton boton-grande" type="submit">Empezar el test</button>
+        <button class="btn btn-confirmar btn-bloque" type="submit">Empezar el test</button>
       </form>
     </section>`;
 
@@ -209,13 +209,14 @@ function empezar(el, control, { curso, temas, lista, estudio, penaliza }) {
     const ultima = i === total - 1;
 
     el.innerHTML = `
-      <section class="contenedor estrecho seccion test">
+      <section class="contenedor estrecho test">
         <div class="test-cabecera">
-          <span><strong>Pregunta ${i + 1}</strong> de ${total}</span>
-          <span class="apagado">${respondidas()} respondidas</span>
+          <span class="test-progreso">${i + 1} / ${total}</span>
+          <span class="test-respondidas">${respondidas()} respondidas</span>
         </div>
         <div class="barra-progreso" style="--valor:${((i + 1) / total) * 100}%"><span></span></div>
 
+        <div class="tarjeta-pregunta">
         <h1 class="enunciado" tabindex="-1">${esc(p.enunciado)}</h1>
 
         <div class="opciones">
@@ -226,23 +227,24 @@ function empezar(el, control, { curso, temas, lista, estudio, penaliza }) {
             if (corregir && elegida === o && o !== p.correcta) clases.push('incorrecta');
             return `
               <button type="button" class="${clases.join(' ')}" data-opcion="${o}" aria-pressed="${elegida === o}" ${corregir ? 'aria-disabled="true"' : ''}>
-                <span class="letra">${LETRAS[pos]}</span>
-                <span>${esc(p.opciones[o])}</span>
+                <span class="letra">${LETRAS[pos].toUpperCase()}</span>
+                <span class="opcion-texto">${esc(p.opciones[o])}</span>
               </button>`;
           }).join('')}
         </div>
 
         ${corregir ? `
           <div class="explicacion ${elegida === p.correcta ? 'bien' : 'mal'}" role="status">
-            <strong>${elegida === p.correcta ? '¡Correcto!' : `Incorrecto. La respuesta correcta es la ${LETRAS[p.orden.indexOf(p.correcta)]}.`}</strong>
+            <strong>${elegida === p.correcta ? '¡Correcto!' : `Incorrecto. La respuesta correcta es la ${LETRAS[p.orden.indexOf(p.correcta)].toUpperCase()}.`}</strong>
             ${p.explicacion ? `<p>${esc(p.explicacion)}</p>` : ''}
           </div>` : ''}
+        </div>
 
         <div class="test-navegacion">
-          <button type="button" class="boton boton-secundario" data-ir="${i - 1}" ${i === 0 ? 'disabled' : ''}>${icono('atras')} Anterior</button>
+          <button type="button" class="btn btn-fantasma" data-ir="${i - 1}" ${i === 0 ? 'disabled' : ''}>${icono('atras')} Anterior</button>
           ${ultima
-            ? '<button type="button" class="boton" data-terminar>Terminar y corregir</button>'
-            : `<button type="button" class="boton" data-ir="${i + 1}">Siguiente ${icono('flecha')}</button>`}
+            ? '<button type="button" class="btn btn-primario" data-terminar>Terminar y corregir</button>'
+            : `<button type="button" class="btn btn-primario" data-ir="${i + 1}">Siguiente ${icono('flecha')}</button>`}
         </div>
 
         <details class="mapa" ${estado.mapaAbierto ? 'open' : ''}>
