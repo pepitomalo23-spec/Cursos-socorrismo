@@ -6,7 +6,8 @@
 
 import { DATOS_DEMO } from './datos-demo.js';
 
-const CLAVE = 'escuela.datos.v1';
+// v2: los cursos pasan a ser los cuatro módulos (los datos guardados de la v1 se ignoran).
+const CLAVE = 'escuela.datos.v2';
 
 let bd = cargar();
 
@@ -51,8 +52,10 @@ const porOrden = (a, b) => a.orden - b.orden;
 
 // ---------- Cursos ----------
 
+// Ordenados por número de módulo (los que no tienen número, al final y por título).
 export async function cursos() {
-  return copia(bd.cursos);
+  return copia([...bd.cursos].sort((a, b) => (a.modulo ?? Infinity) - (b.modulo ?? Infinity)
+    || a.titulo.localeCompare(b.titulo, 'es')));
 }
 
 export async function curso(id) {

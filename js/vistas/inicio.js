@@ -3,7 +3,7 @@
 import { ESCUELA } from '../config.js';
 import * as almacen from '../almacen.js';
 import * as sesion from '../sesion.js';
-import { esc, estiloCurso, icono, titulo } from '../utiles.js';
+import { esc, estiloCurso, etiquetaModulo, icono, titulo } from '../utiles.js';
 
 export async function render(el) {
   titulo('');
@@ -17,7 +17,7 @@ export async function render(el) {
       <p class="portada-lema">${esc(ESCUELA.lema)}</p>
       <div class="portada-botones">
         <a class="btn btn-claro btn-bloque" href="${u ? '#/panel' : '#/acceso'}">${u ? 'Ir a mis cursos' : 'Acceso alumnos'}</a>
-        <a class="btn-portada" href="#cursos" data-desplazar="cursos">${icono('libro')} Ver cursos</a>
+        <a class="btn-portada" href="#cursos" data-desplazar="cursos">${icono('libro')} Ver módulos</a>
       </div>
     </section>
 
@@ -41,7 +41,7 @@ export async function render(el) {
         </div>
       </div>
 
-      <div class="seccion-fila" id="cursos"><h2>Cursos</h2></div>
+      <div class="seccion-fila" id="cursos"><h2>Módulos</h2></div>
       ${cursos.length ? `
         <div class="lista-cursos">
           ${cursos.map((c, i) => {
@@ -50,6 +50,7 @@ export async function render(el) {
               <article class="curso-fila color-${color}">
                 <span class="curso-emblema">${icono(ico)}</span>
                 <div class="curso-texto">
+                  ${c.modulo ? `<span class="curso-etiqueta">${esc(etiquetaModulo(c))}</span>` : ''}
                   <h3>${esc(c.titulo)}</h3>
                   <p>${esc(c.descripcion)}</p>
                 </div>

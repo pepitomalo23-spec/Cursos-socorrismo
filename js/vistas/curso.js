@@ -3,7 +3,7 @@
 import * as almacen from '../almacen.js';
 import * as sesion from '../sesion.js';
 import { porTema, porcentaje } from '../estadisticas.js';
-import { esc, icono, pantallaVacia, plural, titulo } from '../utiles.js';
+import { esc, etiquetaModulo, icono, pantallaVacia, plural, titulo } from '../utiles.js';
 
 export async function render(el, { params }) {
   const curso = await almacen.curso(params.id);
@@ -23,6 +23,7 @@ export async function render(el, { params }) {
   el.innerHTML = `
     <section class="contenedor">
       <nav class="migas" aria-label="Ruta"><a href="#/panel">Mis cursos</a></nav>
+      ${curso.modulo ? `<p class="antetitulo">${esc(etiquetaModulo(curso))}</p>` : ''}
       <h1>${esc(curso.titulo)}</h1>
       <p class="entradilla">${esc(curso.descripcion)}</p>
       <div class="acciones">

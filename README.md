@@ -21,8 +21,12 @@ JetBrains Mono, desde Google Fonts).
 - Corrección pregunta a pregunta, con filtro de fallos y un botón para repasar solo los fallos.
 - Notas: media, mejor nota, porcentaje de aciertos por tema e historial.
 
+El curso de socorrista está dividido en cuatro módulos (cada uno es un «curso» con su número
+de módulo): 1 Natación, 2 Prevención de accidentes en instalaciones acuáticas, 3 Rescate de
+accidentados en instalaciones acuáticas y 4 Primeros auxilios.
+
 **Administración**
-- Cursos: crear, editar y borrar.
+- Cursos y módulos: crear, editar (incluido el número de módulo) y borrar.
 - Temas: ordenar, editar el contenido (con vista previa) y el material.
 - Preguntas: crear, editar y borrar (de 2 a 6 opciones, con explicación).
 - Alumnos: alta, a qué cursos tienen acceso, baja y ficha con sus notas.

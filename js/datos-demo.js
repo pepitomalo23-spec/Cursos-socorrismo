@@ -14,23 +14,61 @@ function pregunta(temaId, n, enunciado, [correcta, ...incorrectas], explicacion)
 
 const cursos = [
   {
-    id: 'socorrismo-acuatico',
-    titulo: 'Socorrista en instalaciones acuáticas',
-    descripcion: 'Curso completo para trabajar como socorrista en piscinas: prevención, técnicas de rescate, soporte vital básico y primeros auxilios.',
-    horas: 150,
+    id: 'modulo-1',
+    modulo: 1,
+    titulo: 'Natación',
+    descripcion: 'Técnica de nado y preparación física del socorrista: estilos, respiración y nado de aproximación.',
+    horas: null,
   },
   {
-    id: 'dea',
-    titulo: 'Uso del desfibrilador (DEA)',
-    descripcion: 'Curso corto para aprender a usar el desfibrilador externo automatizado junto con la RCP.',
-    horas: 8,
+    id: 'modulo-2',
+    modulo: 2,
+    titulo: 'Prevención de accidentes en instalaciones acuáticas',
+    descripcion: 'Funciones del socorrista, vigilancia, cadena de supervivencia y cómo reconocer a una persona en apuros.',
+    horas: null,
+  },
+  {
+    id: 'modulo-3',
+    modulo: 3,
+    titulo: 'Rescate de accidentados en instalaciones acuáticas',
+    descripcion: 'Entradas al agua, aproximación, material de rescate, remolques, zafaduras y extracción.',
+    horas: null,
+  },
+  {
+    id: 'modulo-4',
+    modulo: 4,
+    titulo: 'Primeros auxilios',
+    descripcion: 'Soporte vital básico, uso del desfibrilador (DEA) y primeros auxilios en la instalación acuática.',
+    horas: null,
   },
 ];
 
 const temas = [
   {
+    id: 't0',
+    cursoId: 'modulo-1',
+    orden: 1,
+    titulo: 'Técnica de nado del socorrista',
+    resumen: 'Estilos de natación, respiración y nado con la cabeza fuera del agua.',
+    contenido: `## Los cuatro estilos
+- **Crol**: el más rápido. Brazada alterna y patada de piernas estiradas.
+- **Espalda**: se nada boca arriba, con brazada alterna.
+- **Braza**: brazada simultánea y patada de rana. Permite ver hacia delante con facilidad.
+- **Mariposa**: brazada simultánea y patada ondulatoria con las piernas juntas.
+
+## Respiración
+En crol conviene dominar la **respiración bilateral** (a los dos lados): el nado es más equilibrado y permite mirar a ambos lados de la lámina de agua.
+
+## Nado del socorrista
+Para acercarse a una víctima se nada **crol con la cabeza fuera del agua** (crol de socorrista o de waterpolo), sin perderla de vista. Exige más esfuerzo, por eso se entrena de forma específica.
+
+## Apnea con seguridad
+Nunca se debe **hiperventilar** (respirar muy deprisa) antes de bucear: retrasa las ganas de respirar y puede provocar una pérdida de conocimiento bajo el agua. Las apneas se practican siempre acompañado.`,
+    recursos: [],
+  },
+  {
     id: 't1',
-    cursoId: 'socorrismo-acuatico',
+    cursoId: 'modulo-2',
     orden: 1,
     titulo: 'El socorrista y el salvamento acuático',
     resumen: 'Funciones del socorrista, cadena de supervivencia y fases del rescate.',
@@ -68,8 +106,8 @@ Quien se está ahogando casi nunca grita ni hace señas: suele estar en posició
   },
   {
     id: 't2',
-    cursoId: 'socorrismo-acuatico',
-    orden: 2,
+    cursoId: 'modulo-3',
+    orden: 1,
     titulo: 'Técnicas de rescate acuático',
     resumen: 'Entradas al agua, aproximación, material de rescate, remolques y zafaduras.',
     contenido: `## Entradas al agua
@@ -97,8 +135,8 @@ Si la víctima agarra al socorrista, lo primero es **hundirse**: la víctima bus
   },
   {
     id: 't3',
-    cursoId: 'socorrismo-acuatico',
-    orden: 3,
+    cursoId: 'modulo-4',
+    orden: 1,
     titulo: 'Soporte vital básico (RCP)',
     resumen: 'Secuencia del SVB, compresiones de calidad y RCP en el ahogamiento.',
     contenido: `## Secuencia del soporte vital básico
@@ -124,8 +162,8 @@ Las boqueadas lentas y ruidosas (respiración agónica) no son una respiración 
   },
   {
     id: 't4',
-    cursoId: 'socorrismo-acuatico',
-    orden: 4,
+    cursoId: 'modulo-4',
+    orden: 2,
     titulo: 'Primeros auxilios en la instalación acuática',
     resumen: 'PLS, atragantamiento, lesión medular, hemorragias e hipotermia.',
     contenido: `## Posición lateral de seguridad (PLS)
@@ -149,8 +187,8 @@ Retirar la ropa mojada, secar, abrigar y proteger del viento. Bebidas calientes 
   },
   {
     id: 't5',
-    cursoId: 'dea',
-    orden: 1,
+    cursoId: 'modulo-4',
+    orden: 3,
     titulo: 'El DEA paso a paso',
     resumen: 'Qué es el desfibrilador y cómo usarlo, también junto a la piscina.',
     contenido: `## Qué es el DEA
@@ -169,6 +207,24 @@ Sacar a la víctima del agua y secarle el pecho antes de colocar los parches. Nu
 ];
 
 const preguntas = [
+  pregunta('t0', 1, '¿Cuál es el estilo de natación más rápido?',
+    ['Crol', 'Braza', 'Espalda', 'Mariposa'],
+    'El crol es el estilo más rápido y el más usado en los rescates.'),
+  pregunta('t0', 2, '¿En qué estilo se nada boca arriba?',
+    ['Espalda', 'Crol', 'Braza', 'Mariposa'],
+    'En el estilo espalda el nadador avanza boca arriba con brazada alterna.'),
+  pregunta('t0', 3, '¿Qué estilo utiliza la patada de rana?',
+    ['Braza', 'Crol', 'Espalda', 'Mariposa'],
+    'La braza combina brazada simultánea y patada de rana.'),
+  pregunta('t0', 4, '¿Cómo se nada para acercarse a una víctima?',
+    ['Crol con la cabeza fuera del agua', 'Braza bajo el agua', 'Espalda', 'Mariposa'],
+    'Con la cabeza fuera no se pierde de vista a la víctima.'),
+  pregunta('t0', 5, '¿Qué ventaja tiene la respiración bilateral en crol?',
+    ['Nado más equilibrado y visión a ambos lados', 'Permite nadar sin respirar', 'Aumenta la flotación', 'Evita tener que girar la cabeza'],
+    'Respirar a los dos lados equilibra la brazada y permite vigilar a ambos lados.'),
+  pregunta('t0', 6, '¿Por qué no se debe hiperventilar antes de bucear?',
+    ['Puede provocar una pérdida de conocimiento bajo el agua', 'Porque gasta más energía', 'Porque impide flotar', 'No hay ningún riesgo'],
+    'La hiperventilación retrasa las ganas de respirar y puede causar un desmayo en apnea.'),
   pregunta('t1', 1, '¿Cuál es la función principal del socorrista?',
     ['La prevención de accidentes', 'El rescate de víctimas', 'La aplicación de primeros auxilios', 'El mantenimiento de la instalación'],
     'El rescate y los primeros auxilios son imprescindibles, pero lo que más vidas salva es la prevención.'),
@@ -288,8 +344,8 @@ const preguntas = [
 
 const usuarios = [
   { id: 'u-admin', nombre: 'Dirección', email: 'admin@demo.es', rol: 'admin', cursos: [] },
-  { id: 'u-laura', nombre: 'Laura García', email: 'alumno@demo.es', rol: 'alumno', cursos: ['socorrismo-acuatico', 'dea'] },
-  { id: 'u-marcos', nombre: 'Marcos Ruiz', email: 'marcos@demo.es', rol: 'alumno', cursos: ['socorrismo-acuatico'] },
+  { id: 'u-laura', nombre: 'Laura García', email: 'alumno@demo.es', rol: 'alumno', cursos: ['modulo-1', 'modulo-2', 'modulo-3', 'modulo-4'] },
+  { id: 'u-marcos', nombre: 'Marcos Ruiz', email: 'marcos@demo.es', rol: 'alumno', cursos: ['modulo-1', 'modulo-2'] },
 ];
 
 export const DATOS_DEMO = { cursos, temas, preguntas, usuarios, intentos: [] };

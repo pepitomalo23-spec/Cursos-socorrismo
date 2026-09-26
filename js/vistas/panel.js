@@ -3,7 +3,7 @@
 import * as almacen from '../almacen.js';
 import * as sesion from '../sesion.js';
 import { resumen } from '../estadisticas.js';
-import { chipNota, esc, estiloCurso, fecha, icono, nota, plural, titulo } from '../utiles.js';
+import { chipNota, esc, estiloCurso, etiquetaModulo, fecha, icono, nota, plural, titulo } from '../utiles.js';
 
 export async function render(el) {
   titulo('Mis cursos');
@@ -19,7 +19,8 @@ export async function render(el) {
     return `
       <a class="modo color-${color}" href="#/curso/${esc(c.id)}">
         <span class="modo-emblema">${icono(ico)}</span>
-        <span class="modo-nombre">${esc(c.titulo)}</span>
+        ${c.modulo ? `<span class="modo-etiqueta">${esc(etiquetaModulo(c))}</span>` : ''}
+        <span class="modo-nombre ${c.modulo ? 'modo-nombre-modulo' : ''}">${esc(c.titulo)}</span>
         <span class="modo-sub">${plural(temas.length, 'tema', 'temas')}${r.tests ? ` · media <b>${nota(r.media)}</b>` : ''}</span>
       </a>`;
   }));

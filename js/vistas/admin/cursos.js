@@ -78,6 +78,7 @@ export async function editar(el, { id }) {
       <form class="formulario tarjeta" data-curso novalidate>
         <label>Nombre <input name="titulo" value="${esc(curso.titulo)}" required></label>
         <label>Descripción <textarea name="descripcion" rows="3">${esc(curso.descripcion)}</textarea></label>
+        <label class="campo-corto">Número de módulo <input name="modulo" type="number" min="1" inputmode="numeric" value="${esc(curso.modulo ?? '')}"></label>
         <label class="campo-corto">Horas <input name="horas" type="number" min="0" inputmode="numeric" value="${esc(curso.horas ?? '')}"></label>
         <div class="acciones">
           <button class="boton" type="submit">Guardar cambios</button>
@@ -113,6 +114,7 @@ export async function editar(el, { id }) {
       titulo: nombre,
       descripcion: form.descripcion.value.trim(),
       horas: form.horas.value ? Number(form.horas.value) : null,
+      modulo: form.modulo.value ? Number(form.modulo.value) : null,
     });
     await almacen.guardarCurso(curso);
     el.querySelector('h1').textContent = nombre;
