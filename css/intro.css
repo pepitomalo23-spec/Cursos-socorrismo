@@ -99,6 +99,47 @@ html[data-intro] body { overflow: hidden; }
 .intro-saltar:focus-visible { outline: 2px solid #0c2b48; outline-offset: 2px; }
 #intro.saliendo .intro-saltar { display: none; }
 
+/* Botón de reproducir, solo si el navegador no deja arrancar el vídeo solo. */
+.intro-tocar {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 76px;
+  height: 76px;
+  border: 0;
+  border-radius: 50%;
+  background: #e3222b;
+  color: #fff;
+  box-shadow: 0 12px 30px rgba(227, 34, 43, 0.35);
+  transform: translate(-50%, -50%);
+  cursor: pointer;
+  animation: intro-aparecer 0.3s ease forwards;
+  opacity: 0;
+}
+.intro-tocar[hidden] { display: none; }
+.intro-tocar svg { width: 34px; height: 34px; margin-left: 4px; }
+
+.intro-depurar {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: 8px;
+  z-index: 3;
+  max-height: 45%;
+  margin: 0;
+  padding: 8px;
+  overflow: auto;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.75);
+  color: #9dffbd;
+  font: 11px/1.4 ui-monospace, Menlo, monospace;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
 @keyframes intro-aparecer { to { opacity: 1; } }
 
 @media (prefers-reduced-motion: reduce) {

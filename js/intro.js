@@ -63,55 +63,88 @@ function iniciar() {
     // Sin almacenamiento: volverá a salir en la próxima visita.
   }
 
+  // Con «?intro=depurar» se ve en pantalla qué va haciendo la intro (para móviles).
+  const depurar = /[?&]intro=depurar(&|$)/.test(location.search);
+
   const meta = document.querySelector('meta[name="theme-color"]');
   const colorAnterior = meta?.getAttribute('content');
   meta?.setAttribute('content', COLOR_FONDO);
 
-  const sinVideo = matchMedia('(prefers-reduced-motion: reduce)').matches || navigator.connection?.saveData;
-
   raiz.innerHTML = `
-    ${sinVideo ? '' : `
-      <video class="intro-video" muted playsinline preload="none"
-             disablepictureinpicture disableremoteplayback tabindex="-1" aria-hidden="true"></video>
-      <div class="intro-carga" hidden><span></span></div>`}
-    <img class="intro-fija" src="assets/intro/poster.jpg" alt="" aria-hidden="true" ${sinVideo ? '' : 'hidden'}>
-    <button type="button" class="intro-saltar" tabindex="0">Saltar</button>`;
+    <video class="intro-video" muted playsinline preload="auto"
+           disablepictureinpicture disableremoteplayback tabindex="-1" aria-hidden="true"></video>
+    <div class="intro-carga" hidden><span></span></div>
+    <button type="button" class="intro-tocar" aria-label="Ver la intro" hidden>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z" fill="currentColor"/></svg>
+    </button>
+    <img class="intro-fija" src="assets/intro/poster.jpg" alt="" aria-hidden="true" hidden>
+    <button type="button" class="intro-saltar">Saltar</button>
+    ${depurar ? '<pre class="intro-depurar"></pre>' : ''}`;
 
   const video = raiz.querySelector('video');
   const fija = raiz.querySelector('.intro-fija');
   const carga = raiz.querySelector('.intro-carga');
+  const tocar = raiz.querySelector('.intro-tocar');
+  const registro = raiz.querySelector('.intro-depurar');
   const controlador = new AbortController();
+  const urlDirecta = elegirVideo(video);
+  const inicio = performance.now();
   let cerrada = false;
-  let urlVideo = null;
+  let urlBlob = null;
+  let vigilante = null;
+
+  function anotar(texto) {
+    if (registro) registro.textContent += `${Math.round(performance.now() - inicio)} ms · ${texto}\n`;
+  }
+  anotar(`${navigator.userAgent.replace(/^Mozilla\/5\.0 /, '')}`);
+  anotar(`vídeo: ${urlDirecta.split('/').pop()} · pantalla ${innerWidth}×${innerHeight}`);
 
   function cerrar(retardo = 0) {
     if (cerrada) return;
     cerrada = true;
     controlador.abort();
+    clearInterval(vigilante);
     document.removeEventListener('keydown', alPulsarTecla);
     document.removeEventListener('visibilitychange', alCambiarVisibilidad);
     setTimeout(() => {
       raiz.classList.add('saliendo');
       if (colorAnterior) meta?.setAttribute('content', colorAnterior);
       setTimeout(() => {
-        video?.pause();
+        video.pause();
         raiz.remove();
-        if (urlVideo) URL.revokeObjectURL(urlVideo);
+        if (urlBlob) URL.revokeObjectURL(urlBlob);
         html.removeAttribute('data-intro');
         document.getElementById('principal')?.focus({ preventScroll: true });
       }, 700);
-    }, retardo);
+    }, depurar ? Math.max(retardo, 8000) : retardo);
   }
 
-  // Imagen fija (el logo terminado) cuando el vídeo no se puede o no se debe reproducir.
-  function imagenFija() {
+  // Último recurso, si el vídeo no se puede reproducir de ninguna forma: el logo terminado.
+  function imagenFija(motivo) {
     if (cerrada) return;
-    if (video) video.hidden = true;
-    if (carga) carga.hidden = true;
+    anotar(`imagen fija: ${motivo}`);
+    video.hidden = true;
+    carga.hidden = true;
+    tocar.hidden = true;
     fija.hidden = false;
     raiz.classList.add('reproduciendo');
     cerrar(1400);
   }
+
+  // El navegador no deja arrancar el vídeo solo (p. ej. iPhone en ahorro de energía):
+  // se pide un toque, que sí lo permite, y el vídeo se ve entero.
+  function pedirToque() {
+    if (cerrada || !tocar.hidden) return;
+    anotar('el navegador no deja reproducir solo: se pide un toque');
+    clearInterval(vigilante);
+    carga.hidden = true;
+    tocar.hidden = false;
+  }
+  tocar.addEventListener('click', () => {
+    tocar.hidden = true;
+    video.muted = true;
+    video.play()?.catch((error) => imagenFija(`tras el toque: ${error?.name}`));
+  });
 
   function alPulsarTecla(e) {
     if (e.key === 'Escape') cerrar();
@@ -122,27 +155,56 @@ function iniciar() {
   // Si se abre la web con la pestaña en segundo plano (o se cambia de app), el navegador
   // pausa el vídeo: al volver, sigue donde estaba en vez de quedarse parado.
   function alCambiarVisibilidad() {
-    if (document.visibilityState === 'visible' && video?.src && video.paused && !video.ended) reproducir();
+    if (document.visibilityState === 'visible' && video.src && video.paused && !video.ended && tocar.hidden) reproducir();
   }
   document.addEventListener('visibilitychange', alCambiarVisibilidad);
-
-  if (!video) {
-    imagenFija();
-    return;
-  }
 
   function reproducir() {
     video.muted = true;
     video.play()?.catch((error) => {
-      // AbortError: el navegador interrumpió el arranque (y lo reintenta solo). Solo se
-      // renuncia si no deja reproducir (NotAllowedError, p. ej. iPhone en ahorro de energía).
-      if (error?.name === 'NotAllowedError') imagenFija();
+      anotar(`play() rechazado: ${error?.name}`);
+      // AbortError: el navegador interrumpió el arranque y lo reintenta solo.
+      if (error?.name === 'NotAllowedError') pedirToque();
     });
   }
 
-  video.addEventListener('playing', () => raiz.classList.add('reproduciendo'), { once: true });
-  video.addEventListener('ended', () => cerrar(PAUSA_FINAL));
-  video.addEventListener('error', imagenFija);
+  // Pone el vídeo (en memoria o desde su dirección) y lo arranca. Si en 4 s a la vista
+  // no ha empezado: con el de memoria se prueba la dirección normal; con esta, se pide un toque.
+  function ponerVideo(url) {
+    anotar(`reproducir desde ${url.startsWith('blob:') ? 'memoria' : 'la dirección normal'}`);
+    video.src = url;
+    video.load();
+    if (document.visibilityState === 'visible') reproducir();
+    clearInterval(vigilante);
+    let sinArrancar = 0;
+    vigilante = setInterval(() => {
+      if (cerrada || raiz.classList.contains('reproduciendo')) return clearInterval(vigilante);
+      if (document.visibilityState !== 'visible' || !tocar.hidden) return;
+      sinArrancar += 250;
+      if (sinArrancar >= 4000) {
+        clearInterval(vigilante);
+        anotar('no arranca en 4 s');
+        if (url.startsWith('blob:')) ponerVideo(urlDirecta);
+        else pedirToque();
+      }
+    }, 250);
+  }
+
+  video.addEventListener('playing', () => {
+    anotar(`reproduciendo desde t=${video.currentTime.toFixed(2)}`);
+    raiz.classList.add('reproduciendo');
+  });
+  video.addEventListener('ended', () => {
+    anotar('terminado');
+    cerrar(PAUSA_FINAL);
+  });
+  video.addEventListener('error', () => {
+    const codigo = video.error?.code;
+    anotar(`error del vídeo (código ${codigo})`);
+    if (cerrada) return;
+    if (video.src.startsWith('blob:')) ponerVideo(urlDirecta);
+    else imagenFija(`error ${codigo}`);
+  });
   // Por si algún navegador no avisa del final: se da por terminado en la última décima.
   video.addEventListener('timeupdate', () => {
     if (video.duration && video.currentTime >= video.duration - 0.1) {
@@ -150,41 +212,40 @@ function iniciar() {
     }
   });
 
-  // Tiempo máximo de descarga, contando solo mientras la página está a la vista.
+  // Se descarga entero antes de reproducirlo. La espera solo cuenta con la página a la
+  // vista; si se pasa de ESPERA_MAXIMA, se reproduce directamente desde su dirección.
   let esperado = 0;
+  let descargado = false;
   const reloj = setInterval(() => {
-    if (cerrada || video.src) return clearInterval(reloj);
+    if (cerrada || descargado) return clearInterval(reloj);
     if (document.visibilityState !== 'visible') return;
     esperado += 250;
     if (esperado >= AVISO_CARGA) carga.hidden = false;
     if (esperado >= ESPERA_MAXIMA) {
       clearInterval(reloj);
-      imagenFija();
+      descargado = true;
+      controlador.abort();
+      carga.hidden = true;
+      anotar('la descarga tarda demasiado');
+      ponerVideo(urlDirecta);
     }
   }, 250);
 
-  descargar(elegirVideo(video), (parte) => carga.firstElementChild.style.width = `${Math.round(parte * 100)}%`, controlador.signal)
+  descargar(urlDirecta, (parte) => { carga.firstElementChild.style.width = `${Math.round(parte * 100)}%`; }, controlador.signal)
     .then((blob) => {
-      if (cerrada) return;
-      clearInterval(reloj);
+      if (cerrada || descargado) return;
+      descargado = true;
       carga.hidden = true;
-      urlVideo = URL.createObjectURL(blob);
-      video.src = urlVideo;
-      if (document.visibilityState === 'visible') reproducir();
-      // Si con el vídeo ya descargado no llega a arrancar, se enseña el logo terminado.
-      let sinArrancar = 0;
-      const vigilante = setInterval(() => {
-        if (cerrada || raiz.classList.contains('reproduciendo')) return clearInterval(vigilante);
-        if (document.visibilityState !== 'visible') return;
-        sinArrancar += 250;
-        if (sinArrancar >= 4000) {
-          clearInterval(vigilante);
-          imagenFija();
-        }
-      }, 250);
+      anotar(`descargado (${Math.round(blob.size / 1024)} KB, ${blob.type})`);
+      urlBlob = URL.createObjectURL(blob);
+      ponerVideo(urlBlob);
     })
-    .catch(() => {
-      if (!cerrada) imagenFija();
+    .catch((error) => {
+      if (cerrada || descargado) return;
+      descargado = true;
+      carga.hidden = true;
+      anotar(`no se pudo descargar (${error?.name}): se usa la dirección normal`);
+      ponerVideo(urlDirecta);
     });
 }
 

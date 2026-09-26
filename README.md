@@ -73,8 +73,10 @@ terminar se funde con la web. Sale una vez por visita (para volver a verla: `/?i
   progreso. 1080p solo en pantallas grandes con buena conexión (en el móvil, 720p); WebM
   (VP9) si el navegador lo asegura y, si no, MP4 (H.264), que funciona en todos.
 - Si la web se abre con la pestaña en segundo plano, el vídeo sigue al volver a ella.
-- Botón «Saltar» (y tecla Esc). Con «reducir movimiento» o ahorro de datos se enseña la
-  imagen fija del logo en lugar del vídeo, igual que si el vídeo no pudiera reproducirse.
+- Botón «Saltar» (y tecla Esc). Si el navegador no deja arrancar el vídeo solo (iPhone en
+  ahorro de energía), aparece un botón de reproducir. Si el vídeo desde memoria no arranca,
+  se reproduce desde su dirección normal. La imagen fija del logo solo sale si todo falla.
+- Diagnóstico en el móvil: abrir `/?intro=depurar` enseña en pantalla qué va pasando.
 - Para cambiar el vídeo: sustituir los archivos de `assets/intro/` (mismo nombre). Si el
   fondo del nuevo vídeo es de otro color, cambiarlo en `css/intro.css` y `js/intro.js`.
 
