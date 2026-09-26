@@ -103,25 +103,26 @@ datos) con dos recuadros, «Temario» y «Test», que llevan a ese módulo. La p
 los recuadros piden entrar; con sesión, enseñan los temas y la media, o «Sin acceso» si el
 alumno no está matriculado en ese módulo.
 
-- **De módulo en módulo:** al acabar un gesto de scroll (rueda, trackpad o dedo) la página
-  encaja enseguida (0,26 s) en el módulo más cercano en esa dirección: un gesto corto avanza
-  uno; uno largo, varios o sale del recorrido (quien baja rápido no se queda frenado). La
-  escena empieza a la vez, con un fundido corto desde la anterior, a velocidad real (5 s;
-  2,5 s la del rescate) y se queda en el último fotograma. El vídeo no va pegado al scroll,
-  así que nunca se ve a cámara lenta.
-- Misma técnica que la intro: fotogramas en `<canvas>`. 40 fotogramas por escena en
-  `assets/recorrido/v2/`, AVIF (WebP de respaldo), a 960 px (móviles, ~3 MB en total) y
-  1440 px (pantallas grandes, ~5 MB). No se descarga nada hasta acercarse a la sección, y
-  primero llega la escena del módulo en el que se está.
+- **Avanza con el scroll:** cada escena va hacia delante o hacia atrás al ritmo del dedo o
+  de la rueda y, al acabar, se funde con la siguiente. Para que se vea fluido: 20 fotogramas
+  por segundo de vídeo; cuando el scroll cae entre dos fotogramas se dibuja la mezcla de
+  ambos (sin saltos aunque se baje muy despacio), y el vídeo sigue al scroll con una inercia
+  muy corta para que un golpe de rueda no sea un salto brusco.
+- Misma técnica que la intro: fotogramas en `<canvas>`. 350 fotogramas en
+  `assets/recorrido/v3/`, AVIF (WebP de respaldo), a 960 px (móviles, ~6,7 MB en total) y
+  1440 px (pantallas grandes, ~12 MB). No se descarga nada hasta acercarse a la sección, y
+  primero llega lo más útil (el inicio de cada escena, luego uno de cada 8, 4, 2…): se puede
+  bajar enseguida.
 - Horizontal: la escena llena el hueco con el texto encima, a la izquierda. Vertical: la
   escena arriba, centrada en el socorrista, y el texto debajo.
-- Con «reducir movimiento» se ven cuatro imágenes fijas y se salta sin deslizamiento.
+- Con «reducir movimiento» se ven cuatro imágenes fijas.
 
 **Cambiar las escenas:** poner los vídeos nuevos como `fuentes/recorrido/1.mp4` … `4.mp4` y
-ejecutar `scripts/recorrido-fotogramas.sh fuentes/recorrido v3`; después cambiar `RUTA` en
-`js/recorrido.js` a `v3`. La escena 3 se corta a los 2,5 s (al zambullirse), antes de que
-empiece a nadar: los segundos de cada vídeo están en el script. Las escenas actuales se hicieron con IA (GPT Image 2.5 para las
-imágenes y Kling 3.0 para animarlas), con la cámara fija para que el fondo encaje entre ellas.
+ejecutar `scripts/recorrido-fotogramas.sh fuentes/recorrido v4`; después cambiar `RUTA` en
+`js/recorrido.js` a `v4`. La escena 3 se corta a los 2,5 s (al zambullirse), antes de que
+empiece a nadar: los segundos de cada vídeo están en el script. Las escenas actuales se
+hicieron con IA (GPT Image 2.5 para las imágenes y Kling 3.0 para animarlas), con la cámara
+fija para que el fondo encaje entre ellas.
 
 ## Probarla en local
 
