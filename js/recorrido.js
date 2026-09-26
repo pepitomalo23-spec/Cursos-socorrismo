@@ -219,14 +219,8 @@ export function montarRecorrido(raiz) {
     requestAnimationFrame(cuadro);
   }
 
-  // La sección se queda fija entre la cabecera y, en el móvil, la barra de abajo.
+  // El tamaño del hueco lo pone el css (--alto-cabecera, --alto-barra); aquí solo se repinta.
   function ajustarHueco() {
-    const cabecera = document.querySelector('.cabecera');
-    const nav = document.querySelector('.nav');
-    const arriba = cabecera ? cabecera.offsetHeight : 0;
-    const abajo = nav && getComputedStyle(nav).position === 'fixed' ? nav.offsetHeight : 0;
-    raiz.style.setProperty('--recorrido-arriba', `${arriba}px`);
-    raiz.style.setProperty('--recorrido-alto', `${innerHeight - arriba - abajo}px`);
     sucio = true;
     pedirPintar();
   }

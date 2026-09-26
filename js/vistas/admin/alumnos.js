@@ -3,7 +3,7 @@
 import * as almacen from '../../almacen.js';
 import * as sesion from '../../sesion.js';
 import { resumen as resumenNotas } from '../../estadisticas.js';
-import { aviso, esc, icono, nota, nuevoId, pantallaVacia, titulo } from '../../utiles.js';
+import { aviso, esc, etiquetaModulo, icono, nota, nuevoId, pantallaVacia, titulo } from '../../utiles.js';
 import { informe } from '../notas.js';
 import { dialogo } from './comun.js';
 
@@ -14,7 +14,13 @@ export async function lista(el) {
   const usuarios = await almacen.usuarios();
   const cursos = await almacen.cursos();
   const intentos = await almacen.intentos();
-  const nombreCurso = Object.fromEntries(cursos.map((c) => [c.id, c.titulo]));
+  const porId = Object.fromEntries(cursos.map((c) => [c.id, c]));
+  // «Módulo 2» (con el nombre completo al pasar el ratón) o, si no es un módulo, su título.
+  const nombreCorto = (id) => {
+    const c = porId[id];
+    if (!c) return esc(id);
+    return c.modulo ? `<span title="${esc(c.titulo)}">${esc(etiquetaModulo(c))}</span>` : esc(c.titulo);
+  };
 
   const ordenados = [...usuarios].sort((a, b) => (a.rol === b.rol ? a.nombre.localeCompare(b.nombre, 'es') : a.rol === 'admin' ? 1 : -1));
 
@@ -24,7 +30,7 @@ export async function lista(el) {
         <h1>Alumnos</h1>
         <button type="button" class="boton" data-nuevo>${icono('mas')} Nuevo alumno</button>
       </div>
-      <div class="tabla-desplazable">
+      <div class="tabla-desplazable tabla-tarjetas">
         <table class="tabla">
           <thead>
             <tr><th scope="col">Nombre</th><th scope="col">Cursos</th><th scope="col">Tests</th><th scope="col">Media</th><th scope="col"><span class="oculto">Acciones</span></th></tr>
@@ -34,14 +40,14 @@ export async function lista(el) {
               const r = resumenNotas(intentos.filter((i) => i.usuarioId === u.id));
               return `
                 <tr>
-                  <td>
+                  <td class="celda-principal">
                     <a href="#/admin/alumno/${esc(u.id)}"><strong>${esc(u.nombre)}</strong></a>
                     ${u.rol === 'admin' ? '<span class="etiqueta">Administración</span>' : ''}
                     <br><span class="apagado pequeno">${esc(u.email)}</span>
                   </td>
-                  <td>${u.rol === 'admin' ? '<span class="apagado">Todos</span>' : u.cursos.map((c) => esc(nombreCurso[c] ?? c)).join('<br>') || '<span class="apagado">Ninguno</span>'}</td>
-                  <td>${r.tests}</td>
-                  <td>${nota(r.media)}</td>
+                  <td data-etiqueta="Cursos"><span>${u.rol === 'admin' ? '<span class="apagado">Todos</span>' : u.cursos.map((c) => nombreCorto(c)).join('<br>') || '<span class="apagado">Ninguno</span>'}</span></td>
+                  <td data-etiqueta="Tests">${r.tests}</td>
+                  <td data-etiqueta="Media">${nota(r.media)}</td>
                   <td class="celda-botones">
                     <button type="button" class="boton-icono" data-editar="${esc(u.id)}" aria-label="Editar a ${esc(u.nombre)}">${icono('editar')}</button>
                   </td>

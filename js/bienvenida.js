@@ -9,6 +9,7 @@
 //   tanto no se ve (css: :has). Al aterrizar se esconde y vuelve el de la cabecera, así que no
 //   hay salto.
 // - La cabecera: su borde, el menú y el botón de perfil o tema siguen --aparece (0-1).
+// - El texto de bienvenida se apaga y sube un poco para dejar pasar al logo.
 // El vuelo ocupa VUELO de la altura de la portada.
 // Con «reducir movimiento» no vuela: el logo se queda de fondo y la cabecera, como siempre.
 
@@ -20,6 +21,7 @@ export function montarBienvenida(portada) {
   const hueco = portada.querySelector('.portada-logo');
   const logo = portada.querySelector('.logo-vuelo');
   const aviso = portada.querySelector('.portada-deslizar');
+  const texto = portada.querySelector('.portada-texto');
   if (!hueco || !logo) return;
 
   if (matchMedia('(prefers-reduced-motion: reduce)').matches) logo.classList.add('quieto');
@@ -47,6 +49,11 @@ export function montarBienvenida(portada) {
     logo.classList.toggle('aterrizado', aterrizado);
     cabecera?.style.setProperty('--aparece', Math.min(1, Math.max(0, (p - APARECE_DESDE) / (1 - APARECE_DESDE))).toFixed(3));
     if (aviso) aviso.style.opacity = String(Math.max(0, 1 - p * 3));
+    // El «Bienvenido» se aparta (se apaga y sube un poco) para dejar pasar al logo.
+    if (texto) {
+      texto.style.opacity = String(Math.max(0, 1 - p * 2.2));
+      texto.style.transform = p > 0 ? `translate3d(0, ${(-40 * p).toFixed(1)}px, 0)` : '';
+    }
     hueco.style.opacity = String(Math.max(0, 1 - p / CAMBIO));
     if (aterrizado) return;
 
@@ -67,17 +74,7 @@ export function montarBienvenida(portada) {
     requestAnimationFrame(colocar);
   }
 
-  // La portada ocupa justo lo que se ve entre la cabecera y, en el móvil, la barra de abajo.
-  function ajustarAlto() {
-    const cabecera = document.querySelector('.cabecera');
-    const nav = document.querySelector('.nav');
-    const arriba = cabecera ? cabecera.offsetHeight : 0;
-    const abajo = nav && getComputedStyle(nav).position === 'fixed' ? nav.offsetHeight : 0;
-    portada.style.minHeight = `${innerHeight - arriba - abajo}px`;
-  }
-
   function alCambiarTamano() {
-    ajustarAlto();
     ultimoP = -1;
     pedir();
   }
@@ -89,6 +86,5 @@ export function montarBienvenida(portada) {
 
   addEventListener('scroll', pedir, { passive: true });
   addEventListener('resize', alCambiarTamano);
-  ajustarAlto();
   colocar();
 }

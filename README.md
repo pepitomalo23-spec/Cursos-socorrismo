@@ -128,8 +128,12 @@ alumno no está matriculado en ese módulo.
   1440 px (pantallas grandes, ~12 MB). No se descarga nada hasta acercarse a la sección, y
   primero llega lo más útil (el inicio de cada escena, luego uno de cada 8, 4, 2…): se puede
   bajar enseguida.
-- Horizontal: la escena llena el hueco con el texto encima, a la izquierda. Vertical: la
-  escena arriba, centrada en el socorrista, y el texto debajo.
+- Horizontal: la escena llena el hueco con el texto encima, a la izquierda. Vertical: el
+  texto abajo y la escena arriba ocupando lo que queda (centrada en el socorrista), así que
+  cabe en cualquier móvil; en pantallas bajas se quita la descripción.
+- Sin saltos en el móvil: la portada y el recorrido miden con `svh`, que no cambia al
+  esconderse la barra de direcciones (`--hueco`, `--hueco-visible`; los altos de la cabecera
+  y de la barra de abajo los mide `js/app.js`).
 - Con «reducir movimiento» se ven cuatro imágenes fijas.
 
 **Cambiar las escenas:** poner los vídeos nuevos como `fuentes/recorrido/1.mp4` … `4.mp4` y

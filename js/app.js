@@ -149,6 +149,8 @@ function pintarCabecera(camino) {
       </div>` : `
       <button type="button" class="usuario-boton tema-suelto" data-tema aria-label="${temaActual() === 'light' ? 'Tema oscuro' : 'Tema claro'}">${icono(temaActual() === 'light' ? 'luna' : 'sol')}</button>`}`;
 
+  medirCabecera();
+
   const boton = cabecera.querySelector('.usuario > .usuario-boton');
   boton?.addEventListener('click', () => {
     const menu = cabecera.querySelector('.usuario-menu');
@@ -169,6 +171,22 @@ function pintarCabecera(camino) {
     location.hash = '#/';
   });
 }
+
+// Alto de la cabecera y de la barra de abajo del móvil, para el css (--alto-cabecera,
+// --alto-barra): la portada y el recorrido ocupan justo el hueco que queda entre ellas. Solo
+// cambia con el ancho (no al esconderse la barra de direcciones del móvil, que no las toca).
+function medirCabecera() {
+  const nav = cabecera.querySelector('.nav');
+  const barra = nav && getComputedStyle(nav).position === 'fixed' ? nav.offsetHeight : 0;
+  document.documentElement.style.setProperty('--alto-cabecera', `${cabecera.offsetHeight}px`);
+  document.documentElement.style.setProperty('--alto-barra', `${barra}px`);
+}
+let anchoMedido = innerWidth;
+addEventListener('resize', () => {
+  if (innerWidth === anchoMedido) return;
+  anchoMedido = innerWidth;
+  medirCabecera();
+});
 
 function cerrarMenuUsuario() {
   const menu = cabecera.querySelector('.usuario-menu');

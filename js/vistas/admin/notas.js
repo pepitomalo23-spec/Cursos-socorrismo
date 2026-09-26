@@ -44,7 +44,7 @@ export async function lista(el, { query }) {
         <div><dt>Media</dt><dd>${nota(r.media)}</dd></div>
         <div><dt>Aprobados</dt><dd>${r.aprobados}</dd></div>
       </dl>
-      <div class="tabla-desplazable">
+      <div class="tabla-desplazable tabla-tarjetas">
         <table class="tabla">
           <thead>
             <tr><th scope="col">Fecha</th><th scope="col">Alumno</th><th scope="col">Test</th><th scope="col">Aciertos</th><th scope="col">Nota</th></tr>
@@ -52,11 +52,11 @@ export async function lista(el, { query }) {
           <tbody>
             ${elegidos.map((i) => `
               <tr>
-                <td>${fecha(i.fecha)}</td>
-                <td><a href="#/admin/alumno/${esc(i.usuarioId)}">${esc(i.usuarioNombre)}</a></td>
-                <td><a href="#/intento/${esc(i.id)}">${esc(i.temaTitulos.length === 1 ? i.temaTitulos[0] : `${i.cursoTitulo} (${plural(i.temaTitulos.length, 'tema', 'temas')})`)}</a></td>
-                <td>${i.aciertos}/${i.total}</td>
-                <td>${chipNota(i.nota)}</td>
+                <td data-etiqueta="Fecha">${fecha(i.fecha)}</td>
+                <td data-etiqueta="Alumno"><a href="#/admin/alumno/${esc(i.usuarioId)}">${esc(i.usuarioNombre)}</a></td>
+                <td class="celda-principal"><a href="#/intento/${esc(i.id)}">${esc(i.temaTitulos.length === 1 ? i.temaTitulos[0] : `${i.cursoTitulo} (${plural(i.temaTitulos.length, 'tema', 'temas')})`)}</a></td>
+                <td data-etiqueta="Aciertos">${i.aciertos}/${i.total}</td>
+                <td data-etiqueta="Nota">${chipNota(i.nota)}</td>
               </tr>`).join('')}
           </tbody>
         </table>
