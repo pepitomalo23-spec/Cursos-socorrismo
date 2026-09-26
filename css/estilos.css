@@ -383,15 +383,9 @@ svg { display: block; }
   box-shadow: inset 0 0 0 1px var(--w03);
   transition: border-color 0.15s, background 0.15s, transform 0.15s;
 }
-a.modo:hover { border-color: var(--muted-2); background: var(--card-hi); transform: translateY(-1px); }
 .modo-emblema { display: block; color: var(--c, var(--purple)); transition: transform 0.15s; }
 .modo-emblema .icono { width: 38px; height: 38px; stroke-width: 1.7; }
-.modo-emblema .glifo-modulo { display: block; width: 46px; height: 46px; margin: -4px 0 -2px -3px; }
-a.modo:hover .modo-emblema { transform: scale(1.06); }
 .modo-nombre { display: block; margin-top: 16px; font-family: var(--title); font-size: 15.5px; letter-spacing: 0.2px; line-height: 1.25; }
-.modo-etiqueta { display: block; margin-top: 16px; color: var(--c, var(--purple)); font-family: var(--mono); font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; }
-.modo-etiqueta + .modo-nombre { margin-top: 4px; }
-.modo-nombre-modulo { text-transform: uppercase; font-size: 16.5px; letter-spacing: 0.3px; }
 .modo-sub { display: block; margin-top: auto; padding-top: 6px; color: var(--muted); font-size: 11.5px; line-height: 1.4; }
 .modo-sub b { color: var(--text); font-family: var(--mono); font-weight: 700; }
 
@@ -545,7 +539,7 @@ section.vacio p { margin-bottom: 22px; }
   left: max(24px, calc((100vw - 1080px) / 2 + 24px));
   bottom: 11%;
   width: min(460px, 44vw);
-  height: 270px;
+  height: 340px;
   color: #fff;
 }
 .recorrido-paso {
@@ -583,6 +577,36 @@ section.vacio p { margin-bottom: 22px; }
   text-shadow: 0 2px 18px rgba(0, 0, 0, 0.35);
 }
 .recorrido-paso p { max-width: 38ch; margin: 0; color: rgba(255, 255, 255, 0.88); font-size: 15px; line-height: 1.5; }
+
+/* Recuadros «Temario» y «Test» de cada módulo: pequeños, para no tapar la escena. */
+.recorrido-accesos { display: flex; gap: 10px; margin-top: 18px; }
+.recorrido-acceso {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-width: 0;
+  flex: 0 1 190px;
+  padding: 11px 14px 11px 11px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 14px;
+  background: rgba(14, 14, 14, 0.62);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  color: #f5f5f5;
+  text-decoration: none !important;
+  transition: border-color 0.15s, background 0.15s, transform 0.15s;
+}
+a.recorrido-acceso:hover { border-color: rgba(255, 255, 255, 0.4); background: rgba(24, 24, 24, 0.8); transform: translateY(-1px); }
+.recorrido-acceso-icono { display: grid; place-items: center; flex-shrink: 0; width: 36px; height: 36px; color: var(--c); }
+.recorrido-acceso-icono .glifo-modulo { width: 36px; height: 36px; }
+.recorrido-acceso-icono .icono { width: 26px; height: 26px; stroke-width: 1.8; }
+.recorrido-acceso-texto { display: flex; flex-direction: column; min-width: 0; }
+.recorrido-acceso-texto strong { font-family: var(--title); font-size: 16px; font-weight: 400; letter-spacing: 0.3px; text-transform: uppercase; line-height: 1.15; }
+.recorrido-acceso-texto span { overflow: hidden; color: rgba(255, 255, 255, 0.66); font-size: 11.5px; text-overflow: ellipsis; white-space: nowrap; }
+.recorrido-acceso-texto b { color: #fff; font-family: var(--mono); }
+.recorrido-acceso.bloqueado { opacity: 0.7; }
+.recorrido-acceso.bloqueado .recorrido-acceso-icono { color: rgba(255, 255, 255, 0.6); }
+.recorrido-paso:not(.activo) { pointer-events: none; }
 .recorrido-progreso { position: absolute; left: 0; bottom: 0; display: flex; gap: 6px; width: 200px; }
 .recorrido-progreso span { position: relative; flex: 1; height: 3px; overflow: hidden; border-radius: 999px; background: rgba(255, 255, 255, 0.28); }
 .recorrido-progreso span::after {
@@ -597,12 +621,18 @@ section.vacio p { margin-bottom: 22px; }
 /* En vertical: la imagen arriba (centrada en el socorrista) y el texto debajo. */
 @media (max-aspect-ratio: 4 / 5) {
   .recorrido-fijo { background: var(--bg); }
-  .recorrido-lienzo { height: 60%; }
-  .recorrido-fijo::after { inset: 0 0 40% 0; background: linear-gradient(to bottom, rgba(0, 0, 0, 0) 72%, var(--bg)); }
-  .recorrido-textos { left: 16px; right: 16px; top: 60%; bottom: 0; width: auto; height: auto; color: var(--text); }
+  .recorrido-lienzo { height: 52%; }
+  .recorrido-fijo::after { inset: 0 0 48% 0; background: linear-gradient(to bottom, rgba(0, 0, 0, 0) 72%, var(--bg)); }
+  .recorrido-textos { left: 16px; right: 16px; top: 52%; bottom: 0; width: auto; height: auto; color: var(--text); }
   .recorrido-paso { top: 6px; bottom: auto; }
   .recorrido-paso h2 { font-size: clamp(26px, 8vw, 34px); text-shadow: none; }
-  .recorrido-paso p { color: var(--muted); font-size: 14px; }
+  .recorrido-paso p { display: -webkit-box; overflow: hidden; color: var(--muted); font-size: 14px; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+  .recorrido-accesos { margin-top: 14px; }
+  .recorrido-acceso { flex: 1 1 0; border-color: var(--line); background: var(--card); color: var(--text); -webkit-backdrop-filter: none; backdrop-filter: none; }
+  a.recorrido-acceso:hover { border-color: var(--muted-2); background: var(--card-hi); }
+  .recorrido-acceso-texto span { color: var(--muted); }
+  .recorrido-acceso-texto b { color: var(--text); }
+  .recorrido-acceso.bloqueado .recorrido-acceso-icono { color: var(--muted-2); }
   .recorrido-progreso { bottom: 18px; width: 100%; }
   .recorrido-progreso span { background: var(--line); }
   .recorrido-progreso span::after { background: var(--text); }

@@ -11,7 +11,6 @@ import { esc, icono, pantallaVacia, titulo } from './utiles.js';
 
 import * as inicio from './vistas/inicio.js';
 import * as acceso from './vistas/acceso.js';
-import * as panel from './vistas/panel.js';
 import * as curso from './vistas/curso.js';
 import * as tema from './vistas/tema.js';
 import * as test from './vistas/test.js';
@@ -23,7 +22,6 @@ import * as admin from './vistas/admin.js';
 const RUTAS = [
   ['/', inicio, null],
   ['/acceso', acceso, null],
-  ['/panel', panel, 'usuario'],
   ['/curso/:id', curso, 'usuario'],
   ['/tema/:id', tema, 'usuario'],
   ['/test', test, 'usuario'],
@@ -73,6 +71,11 @@ async function mostrar() {
   vistaActual = null;
   hashActual = location.hash;
 
+  // «Mis cursos» es ahora la portada (el recorrido por los módulos); #/panel queda como alias.
+  if (/^#\/panel(\?|$)/.test(location.hash)) {
+    location.replace('#/');
+    return;
+  }
   const { ruta, params, query, camino } = resolver(location.hash);
   const u = sesion.usuario();
 
@@ -82,7 +85,7 @@ async function mostrar() {
   }
   // Quien ya ha entrado no necesita la pantalla de acceso.
   if (ruta?.vista === acceso && u) {
-    location.replace(query.get('volver') ? `#${query.get('volver')}` : '#/panel');
+    location.replace(query.get('volver') ? `#${query.get('volver')}` : '#/');
     return;
   }
 
@@ -112,7 +115,7 @@ function pintarCabecera(camino) {
   const u = sesion.usuario();
   const enlaces = u
     ? [
-      ['#/panel', 'Mis cursos', 'libro'],
+      ['#/', 'Mis cursos', 'libro'],
       ['#/notas', 'Mis notas', 'grafica'],
       ...(sesion.esAdmin() ? [['#/admin', 'Administración', 'ajustes']] : []),
     ]
@@ -126,7 +129,7 @@ function pintarCabecera(camino) {
   };
 
   cabecera.innerHTML = `
-    <a class="marca" href="${u ? '#/panel' : '#/'}" aria-label="${esc(ESCUELA.nombre)} · inicio">
+    <a class="marca" href="#/" aria-label="${esc(ESCUELA.nombre)} · inicio">
       <svg class="marca-logo" viewBox="0 0 1862 623" aria-hidden="true"><use href="assets/logo.svg#logo"/></svg>
     </a>
     <nav class="nav" aria-label="Principal">

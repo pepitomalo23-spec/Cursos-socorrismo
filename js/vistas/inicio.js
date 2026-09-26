@@ -1,9 +1,11 @@
-// Portada pública: presentación de la escuela, cursos y contacto.
+// Portada: presentación de la escuela, recorrido por los módulos (con el acceso al temario y
+// al test de cada uno) y contacto. Es también la pantalla de «Mis cursos» del alumno.
 
 import { ESCUELA } from '../config.js';
 import * as almacen from '../almacen.js';
 import * as sesion from '../sesion.js';
-import { emblemaCurso, esc, estiloCurso, etiquetaModulo, icono, titulo } from '../utiles.js';
+import { resumen } from '../estadisticas.js';
+import { emblemaCurso, esc, estiloCurso, etiquetaModulo, icono, nota, plural, titulo } from '../utiles.js';
 import { montarRecorrido } from '../recorrido.js';
 
 // Textos del recorrido si falta algún módulo en los datos.
@@ -13,8 +15,19 @@ export async function render(el) {
   titulo('');
   const cursos = await almacen.cursos();
   const u = sesion.usuario();
-  const recorrido = MODULOS_BASE.map((nombre, i) =>
-    cursos.find((c) => Number(c.modulo) === i + 1) ?? { titulo: nombre, descripcion: '' });
+  const intentos = u ? await almacen.intentos({ usuarioId: u.id }) : [];
+  const recorrido = await Promise.all(MODULOS_BASE.map(async (nombre, i) => {
+    const curso = cursos.find((c) => Number(c.modulo) === i + 1);
+    return {
+      curso,
+      titulo: curso?.titulo ?? nombre,
+      descripcion: curso?.descripcion ?? '',
+      temas: curso ? (await almacen.temas(curso.id)).length : 0,
+      // Sin sesión se enlaza igual: al pulsar se pide entrar y luego se vuelve aquí.
+      abierto: !u || sesion.esAdmin() || (curso && u.cursos.includes(curso.id)),
+      tests: curso ? resumen(intentos.filter((x) => x.cursoId === curso.id)) : null,
+    };
+  }));
 
   el.innerHTML = `
     <section class="portada">
@@ -22,20 +35,23 @@ export async function render(el) {
       <h1 class="portada-titulo">${esc(ESCUELA.nombre)}</h1>
       <p class="portada-lema">${esc(ESCUELA.lema)}</p>
       <div class="portada-botones">
-        <a class="btn btn-claro btn-bloque" href="${u ? '#/panel' : '#/acceso'}">${u ? 'Ir a mis cursos' : 'Acceso alumnos'}</a>
+        ${u
+          ? '<a class="btn btn-claro btn-bloque" href="#recorrido" data-desplazar="recorrido">Ir a mis módulos</a>'
+          : '<a class="btn btn-claro btn-bloque" href="#/acceso">Acceso alumnos</a>'}
         <a class="btn-portada" href="#cursos" data-desplazar="cursos">${icono('libro')} Ver módulos</a>
       </div>
     </section>
 
-    <section class="recorrido" aria-label="Los cuatro módulos del curso">
+    <section class="recorrido" id="recorrido" aria-label="Los cuatro módulos del curso">
       <div class="recorrido-fijo">
         <canvas class="recorrido-lienzo" aria-hidden="true"></canvas>
         <div class="recorrido-textos">
-          ${recorrido.map((c, i) => `
+          ${recorrido.map((m, i) => `
             <div class="recorrido-paso color-${estiloCurso(i)[0]}">
               <span class="recorrido-etiqueta">Módulo ${i + 1}</span>
-              <h2>${esc(c.titulo)}</h2>
-              ${c.descripcion ? `<p>${esc(c.descripcion)}</p>` : ''}
+              <h2>${esc(m.titulo)}</h2>
+              ${m.descripcion ? `<p>${esc(m.descripcion)}</p>` : ''}
+              ${m.curso ? accesos(m, estiloCurso(i)[1]) : ''}
             </div>`).join('')}
           <div class="recorrido-progreso" aria-hidden="true">${recorrido.map(() => '<span></span>').join('')}</div>
         </div>
@@ -92,9 +108,22 @@ export async function render(el) {
 
   montarRecorrido(el.querySelector('.recorrido'));
 
-  // «Ver cursos» baja hasta la lista sin cambiar la dirección.
-  el.querySelector('[data-desplazar]').addEventListener('click', (e) => {
+  // «Ver módulos» e «Ir a mis módulos» bajan sin cambiar la dirección.
+  el.querySelectorAll('[data-desplazar]').forEach((boton) => boton.addEventListener('click', (e) => {
     e.preventDefault();
     document.getElementById(e.currentTarget.dataset.desplazar).scrollIntoView({ behavior: 'smooth' });
-  });
+  }));
+}
+
+// Recuadros «Temario» y «Test» de un módulo dentro del recorrido.
+function accesos(m, iconoLinea) {
+  const id = encodeURIComponent(m.curso.id);
+  const recuadro = (href, simbolo, nombre, detalle) => m.abierto
+    ? `<a class="recorrido-acceso" href="${href}"><span class="recorrido-acceso-icono">${simbolo}</span><span class="recorrido-acceso-texto"><strong>${nombre}</strong><span>${detalle}</span></span></a>`
+    : `<span class="recorrido-acceso bloqueado"><span class="recorrido-acceso-icono">${icono('candado')}</span><span class="recorrido-acceso-texto"><strong>${nombre}</strong><span>Sin acceso</span></span></span>`;
+  return `
+    <div class="recorrido-accesos">
+      ${recuadro(`#/curso/${id}`, emblemaCurso(m.curso, iconoLinea), 'Temario', plural(m.temas, 'tema', 'temas'))}
+      ${recuadro(`#/test?curso=${id}`, icono('test'), 'Test', m.tests?.tests ? `Media <b>${nota(m.tests.media)}</b>` : 'Tipo examen')}
+    </div>`;
 }

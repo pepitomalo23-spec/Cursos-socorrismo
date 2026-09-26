@@ -53,9 +53,8 @@ js/datos-demo.js        cursos, temas, preguntas y alumnos de ejemplo
 js/estadisticas.js      medias y aciertos por tema
 js/utiles.js            utilidades comunes (escapar HTML, formato de notas, iconos…)
 js/vistas/              una pantalla por archivo
-  inicio.js             portada pública
+  inicio.js             portada: presentación, recorrido por los módulos («Mis cursos») y contacto
   acceso.js             inicio de sesión y crear cuenta
-  panel.js              «Mis cursos»
   curso.js              temario de un curso
   tema.js               un tema
   test.js               preparar y hacer un test
@@ -99,10 +98,14 @@ y ejecutar `scripts/intro-fotogramas.sh fuentes/nuevo.mp4 v2`; después cambiar 
 Bajo la presentación de la portada, al hacer scroll un socorrista recorre los cuatro módulos
 en la misma playa: nada (1), vigila con el silbato (2), entra al agua con el tubo de rescate
 (3) y hace una RCP con el DESA (4). Cada escena avanza con el scroll y, al acabar, se funde
-con la siguiente; al lado aparece el módulo (título y descripción, sacados de los datos).
+con la siguiente; al lado aparece el módulo (título y descripción, sacados de los datos) con
+dos recuadros, «Temario» y «Test», que llevan a ese módulo. La portada es también «Mis
+cursos» del alumno (ya no hay panel aparte; `#/panel` lleva a la portada): sin sesión, los
+recuadros piden entrar; con sesión, enseñan los temas y la media, o «Sin acceso» si el
+alumno no está matriculado en ese módulo.
 
 - Misma técnica que la intro: fotogramas en `<canvas>`, porque un vídeo movido con el scroll
-  va a saltos en el móvil. 40 fotogramas por escena en `assets/recorrido/v1/`, AVIF (WebP de
+  va a saltos en el móvil. 40 fotogramas por escena en `assets/recorrido/v2/`, AVIF (WebP de
   respaldo), a 960 px (móviles, ~3 MB en total) y 1440 px (pantallas grandes, ~5 MB).
 - No se descarga nada hasta acercarse a la sección, y se pide primero lo más útil (el
   inicio de cada escena, luego uno de cada 8, 4, 2…): se puede bajar enseguida.
@@ -111,8 +114,9 @@ con la siguiente; al lado aparece el módulo (título y descripción, sacados de
 - Con «reducir movimiento» se ven cuatro imágenes fijas.
 
 **Cambiar las escenas:** poner los vídeos nuevos como `fuentes/recorrido/1.mp4` … `4.mp4` y
-ejecutar `scripts/recorrido-fotogramas.sh fuentes/recorrido v2`; después cambiar `RUTA` en
-`js/recorrido.js` a `v2`. Las escenas actuales se hicieron con IA (GPT Image 2.5 para las
+ejecutar `scripts/recorrido-fotogramas.sh fuentes/recorrido v3`; después cambiar `RUTA` en
+`js/recorrido.js` a `v3`. La escena 3 se corta a los 2,5 s (al zambullirse), antes de que
+empiece a nadar: los segundos de cada vídeo están en el script. Las escenas actuales se hicieron con IA (GPT Image 2.5 para las
 imágenes y Kling 3.0 para animarlas), con la cámara fija para que el fondo encaje entre ellas.
 
 ## Probarla en local

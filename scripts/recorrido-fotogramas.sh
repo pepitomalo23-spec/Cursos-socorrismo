@@ -9,10 +9,10 @@
 # (v2, v3…) y poner la misma en RUTA dentro de js/recorrido.js: los fotogramas se guardan
 # en caché un año, así que la carpeta nueva evita que los navegadores sigan con los antiguos.
 #
-# Saca 40 fotogramas de cada vídeo (8 por segundo de un clip de 5 s; si cambia, actualizar
-# FOTOGRAMAS en js/recorrido.js) y los guarda en AVIF (el que se usa) y WebP (respaldo),
-# en 960 px (móviles) y 1440 px (pantallas grandes) de ancho. La calidad está ajustada
-# para que todo el recorrido pese unos 3 MB en el móvil.
+# Saca 40 fotogramas de cada vídeo, repartidos en los segundos que se usan de él (si cambia
+# el número, actualizar FOTOGRAMAS en js/recorrido.js), y los guarda en AVIF (el que se usa)
+# y WebP (respaldo), en 960 px (móviles) y 1440 px (pantallas grandes) de ancho. La calidad
+# está ajustada para que todo el recorrido pese unos 3 MB en el móvil.
 # Necesita ffmpeg (o FFMPEG=/ruta/a/ffmpeg) y Python con Pillow 11.3 o posterior.
 set -euo pipefail
 
@@ -23,9 +23,12 @@ ffmpeg="${FFMPEG:-ffmpeg}"
 tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
 
+# Segundos de cada vídeo que se usan: el 3 se corta al zambullirse, antes de nadar.
+duraciones=(5 5 2.5 5)
 for escena in 1 2 3 4; do
-  "$ffmpeg" -hide_banner -loglevel error -i "$videos/$escena.mp4" -vf fps=8 -frames:v 40 \
-    -pix_fmt rgb24 "$tmp/$escena-%03d.png"
+  segundos="${duraciones[$((escena - 1))]}"
+  "$ffmpeg" -hide_banner -loglevel error -t "$segundos" -i "$videos/$escena.mp4" \
+    -vf "fps=40/$segundos" -frames:v 40 -pix_fmt rgb24 "$tmp/$escena-%03d.png"
 done
 
 mkdir -p "$destino/960" "$destino/1440"

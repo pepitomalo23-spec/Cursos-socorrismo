@@ -54,7 +54,7 @@ export async function render(el, { query }) {
         if (registro) await sesion.registrar(form.nombre.value, email, form.clave.value);
         else await sesion.entrar(email, form.clave.value);
         const volver = query.get('volver');
-        location.hash = volver && !volver.startsWith('/acceso') ? `#${volver}` : '#/panel';
+        location.hash = volver && !volver.startsWith('/acceso') ? `#${volver}` : '#/';
       } catch (err) {
         error.textContent = err.message;
       }

@@ -18,7 +18,7 @@
 //
 // Para cambiar las escenas: scripts/recorrido-fotogramas.sh (y subir la versión de RUTA).
 
-const RUTA = 'assets/recorrido/v1'; // cambiar la versión al cambiar los fotogramas
+const RUTA = 'assets/recorrido/v2'; // cambiar la versión al cambiar los fotogramas
 const ESCENAS = 4;
 const FOTOGRAMAS = 40; // por escena
 const PROPORCION = 16 / 9;

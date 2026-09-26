@@ -10,7 +10,7 @@ export async function render(el, { params }) {
   const tema = await almacen.tema(params.id);
   if (!tema || !sesion.puedeVerCurso(tema.cursoId)) {
     titulo('Tema no disponible');
-    el.innerHTML = pantallaVacia('Tema no disponible', 'No existe o no tienes acceso a este curso.', { href: '#/panel', texto: 'Volver a mis cursos' });
+    el.innerHTML = pantallaVacia('Tema no disponible', 'No existe o no tienes acceso a este curso.', { href: '#/', texto: 'Volver a mis cursos' });
     return;
   }
   titulo(tema.titulo);
@@ -28,7 +28,7 @@ export async function render(el, { params }) {
   el.innerHTML = `
     <article class="contenedor estrecho">
       <nav class="migas" aria-label="Ruta">
-        <a href="#/panel">Mis cursos</a>
+        <a href="#/">Mis cursos</a>
         <a href="#/curso/${esc(curso.id)}">${esc(curso.titulo)}</a>
       </nav>
       <p class="antetitulo">Tema ${posicion + 1}</p>

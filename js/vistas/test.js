@@ -18,7 +18,7 @@ export async function render(el, { query }) {
   const curso = await almacen.curso(query.get('curso'));
   if (!curso || !sesion.puedeVerCurso(curso.id)) {
     titulo('Test no disponible');
-    el.innerHTML = pantallaVacia('Test no disponible', 'El curso no existe o no estás matriculado en él.', { href: '#/panel', texto: 'Volver a mis cursos' });
+    el.innerHTML = pantallaVacia('Test no disponible', 'El curso no existe o no estás matriculado en él.', { href: '#/', texto: 'Volver a mis cursos' });
     return null;
   }
   const temas = await almacen.temas(curso.id);
@@ -58,7 +58,7 @@ async function configurar(el, control, { curso, temas, preseleccion }) {
 
   const migas = `
     <nav class="migas" aria-label="Ruta">
-      <a href="#/panel">Mis cursos</a>
+      <a href="#/">Mis cursos</a>
       <a href="#/curso/${esc(curso.id)}">${esc(curso.titulo)}</a>
     </nav>`;
 
