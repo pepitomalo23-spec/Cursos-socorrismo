@@ -126,7 +126,9 @@ function pintarCabecera(camino) {
   };
 
   cabecera.innerHTML = `
-    <a class="marca" href="${u ? '#/panel' : '#/'}">${icono('salvavidas')}<span>${esc(ESCUELA.nombre)}</span></a>
+    <a class="marca" href="${u ? '#/panel' : '#/'}" aria-label="${esc(ESCUELA.nombre)} · inicio">
+      <svg class="marca-logo" viewBox="0 0 1862 623" aria-hidden="true"><use href="assets/logo.svg#logo"/></svg>
+    </a>
     <nav class="nav" aria-label="Principal">
       ${enlaces.map(([href, texto, ico]) => `
         <a class="nav-item" href="${href}" ${activo(href) ? 'aria-current="page"' : ''}>${icono(ico)}<span class="nav-texto">${esc(texto)}</span></a>`)

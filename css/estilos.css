@@ -115,19 +115,12 @@ svg { display: block; }
   background: var(--bg);
 }
 
-.marca {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-  color: var(--text);
-  font-family: var(--title);
-  font-size: 16.5px;
-  letter-spacing: 0.3px;
-  text-decoration: none !important;
-}
-.marca span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.marca .icono { width: 20px; height: 20px; color: var(--coral); stroke-width: 2.4; }
+/* Logo de la escuela (assets/logo.svg). Las partes azules usan currentColor:
+   blancas en el tema oscuro y el azul original en el claro. */
+.marca { display: flex; align-items: center; justify-self: start; min-width: 0; color: var(--text); text-decoration: none !important; }
+.marca-logo { display: block; height: 46px; width: auto; aspect-ratio: 1862 / 623; }
+[data-theme="light"] .marca { color: #04335d; }
+@media (max-width: 640px) { .marca-logo { height: 40px; } }
 
 .nav { display: flex; align-items: center; gap: 22px; }
 .nav-item {
