@@ -103,11 +103,12 @@ datos) con dos recuadros, «Temario» y «Test», que llevan a ese módulo. La p
 los recuadros piden entrar; con sesión, enseñan los temas y la media, o «Sin acceso» si el
 alumno no está matriculado en ese módulo.
 
-- **De módulo en módulo:** cada gesto de scroll (rueda, trackpad o dedo) lleva al módulo
-  siguiente o al anterior y la página encaja en él. Al llegar, su escena se reproduce sola a
-  velocidad real (5 s; 2,5 s la del rescate) y se queda en el último fotograma, con un fundido
-  desde la anterior. El vídeo no va pegado al scroll, así que nunca se ve a cámara lenta.
-  Pasado el cuarto módulo, la página sigue con normalidad.
+- **De módulo en módulo:** al acabar un gesto de scroll (rueda, trackpad o dedo) la página
+  encaja enseguida (0,26 s) en el módulo más cercano en esa dirección: un gesto corto avanza
+  uno; uno largo, varios o sale del recorrido (quien baja rápido no se queda frenado). La
+  escena empieza a la vez, con un fundido corto desde la anterior, a velocidad real (5 s;
+  2,5 s la del rescate) y se queda en el último fotograma. El vídeo no va pegado al scroll,
+  así que nunca se ve a cámara lenta.
 - Misma técnica que la intro: fotogramas en `<canvas>`. 40 fotogramas por escena en
   `assets/recorrido/v2/`, AVIF (WebP de respaldo), a 960 px (móviles, ~3 MB en total) y
   1440 px (pantallas grandes, ~5 MB). No se descarga nada hasta acercarse a la sección, y

@@ -1,18 +1,18 @@
 // Recorrido por los cuatro módulos en la portada: un socorrista en la misma playa nada,
 // vigila, rescata y hace una RCP, y al lado aparece cada módulo con su Temario y su Test.
 //
-// Se avanza de módulo en módulo: cada gesto de scroll (rueda, trackpad o dedo) lleva al
-// siguiente o al anterior y la página encaja en él. Al llegar, su escena se reproduce sola a
-// velocidad real y se queda en el último fotograma. El vídeo no va pegado al scroll: así nunca
-// se ve a cámara lenta cuando el scroll frena.
+// Se avanza de módulo en módulo: al acabar un gesto de scroll (rueda, trackpad o dedo) la
+// página encaja enseguida en el módulo más cercano en esa dirección; si el gesto ha sido largo
+// se avanzan varios o se sale de la sección. Al llegar, su escena se reproduce sola a velocidad
+// real y se queda en el último fotograma. El vídeo no va pegado al scroll: así nunca se ve a
+// cámara lenta cuando el scroll frena.
 //
 // Técnica: la misma que la intro (js/intro.js), fotogramas dibujados en un <canvas>; un
 // <video> no siempre arranca solo en el móvil y las imágenes sí.
 //
 // - La sección mide ESCENAS + 1 pantallas de alto y su interior se queda fijo mientras se
-//   baja; cada pantalla de recorrido es un módulo. Al acabar un gesto dentro de la sección,
-//   se desliza hasta el módulo siguiente (o el anterior, si se subía). Pasado el cuarto, la
-//   página sigue con normalidad.
+//   baja; cada pantalla de recorrido es un módulo. Pasado el cuarto, la página sigue con
+//   normalidad.
 // - Cada escena son FOTOGRAMAS imágenes (AVIF, o WebP si el navegador no tiene AVIF). No se
 //   descarga nada hasta acercarse a la sección. Primero llega el primer fotograma de cada
 //   escena y después las escenas enteras, antes la del módulo en el que se está. Si falta
@@ -29,11 +29,11 @@ const ESCENAS = 4;
 const FOTOGRAMAS = 40; // por escena
 const DURACION = [5000, 5000, 2500, 5000]; // ms de cada escena (su duración real)
 const ENFOQUE = [0.47, 0.47, 0.47, 0.5]; // x del socorrista (0-1) en cada escena
-const FUNDIDO = 500; // ms del fundido entre escenas
+const FUNDIDO = 300; // ms del fundido entre escenas
 const EN_PARALELO = 6;
 const FIJO_REDUCIDO = 0.55; // con «reducir movimiento», qué fotograma de cada escena se enseña
 const ESPERA_FIN_SCROLL = 140; // ms sin scroll para darlo por acabado (sin evento scrollend)
-const COLA_GESTO = 450; // ms tras encajar en los que más scroll se toma como el mismo gesto
+const DESLIZAMIENTO = 260; // ms que tarda en encajar en un módulo
 
 export function montarRecorrido(raiz) {
   const fijo = raiz.querySelector('.recorrido-fijo');
@@ -56,11 +56,11 @@ export function montarRecorrido(raiz) {
   let inicioFundido = -Infinity;
   let animando = false;
 
-  // Encaje: dónde acabó el último gesto (en módulos, puede ser <0 o >ESCENAS) y si el
-  // deslizamiento en curso lo ha pedido este código.
-  let ultimaParada = null;
+  // Encaje: si hay un deslizamiento en curso (pedido por este código) y hacia dónde iba el
+  // último scroll del usuario.
   let deslizando = false;
-  let finDeslizamiento = -Infinity;
+  let ultimoY = scrollY;
+  let direccion = 0; // 1 si el último scroll del usuario bajaba, -1 si subía
   let tocando = false;
   let temporizador = 0;
 
@@ -220,6 +220,8 @@ export function montarRecorrido(raiz) {
 
   function alHacerScroll() {
     if (!raiz.isConnected) { desmontar(); return; }
+    if (!deslizando && scrollY !== ultimoY) direccion = Math.sign(scrollY - ultimoY);
+    ultimoY = scrollY;
     const pos = posicion();
     // El primer módulo arranca cuando la sección ya está casi entera a la vista. Mientras se
     // desliza hasta un módulo, ese módulo ya está puesto (se cambió al decidir el destino).
@@ -230,37 +232,48 @@ export function montarRecorrido(raiz) {
     }
   }
 
-  // Al acabar un gesto dentro de la sección, encaja en el módulo siguiente o el anterior.
+  // Al acabar un gesto dentro de la sección, encaja en el módulo más cercano en la dirección
+  // en la que se iba: si se baja rápido, se avanza todo lo que haya llevado el gesto (o se
+  // sale de la sección), sin frenar a nadie.
   function alAcabarScroll() {
-    if (!raiz.isConnected || tocando) return;
+    if (!raiz.isConnected || tocando || deslizando) return;
     const pos = posicion();
-    const antes = ultimaParada ?? pos;
-    ultimaParada = pos;
-    if (deslizando) {
-      deslizando = false;
-      finDeslizamiento = performance.now();
-      // Si otro gesto lo ha interrumpido y se ha quedado entre dos módulos, se encaja de nuevo.
-      if (Math.abs(pos - Math.round(pos)) < 0.01) { ultimaParada = Math.round(pos); return; }
-    }
     // Fuera de la sección el scroll es libre, salvo al llegar desde arriba: se encaja en el
     // primer módulo si ya se ve casi entero.
-    const entrando = pos > -0.5 && pos < 0 && pos > antes;
+    const entrando = pos > -0.5 && pos < 0 && direccion > 0;
     if ((pos <= 0.002 && !entrando) || pos >= ESCENAS - 0.002) return;
-    let destino;
-    // Lo que llega justo después de encajar es el final del mismo gesto (una rueda que sigue
-    // girando, la inercia del trackpad): se queda en el módulo en el que acaba de encajar.
-    if (performance.now() - finDeslizamiento < COLA_GESTO && Number.isInteger(antes)) destino = antes;
-    else if (pos > antes) destino = Math.min(Math.ceil(pos), Math.max(-1, Math.floor(antes + 0.002)) + 1);
-    else destino = Math.max(Math.floor(pos), Math.min(ESCENAS, Math.ceil(antes - 0.002)) - 1);
-    destino = Math.max(0, Math.min(ESCENAS, destino));
-    const { base, alto } = geometria();
-    const y = Math.round(base + destino * alto);
-    if (Math.abs(y - scrollY) < 2) return;
-    deslizando = true;
-    ultimaParada = destino;
+    if (Math.abs(pos - Math.round(pos)) < 0.003) return;
+    const destino = Math.max(0, Math.min(ESCENAS, direccion > 0 ? Math.ceil(pos) : Math.floor(pos)));
     irAModulo(Math.min(ESCENAS - 1, destino)); // la escena empieza ya, mientras se desliza
-    scrollTo({ top: y, behavior: reducido ? 'auto' : 'smooth' });
+    deslizarA(destino);
   }
+
+  // Desliza hasta el módulo n (ESCENAS: donde se suelta la sección). Animación propia y corta
+  // (la del navegador es más lenta); se corta en cuanto se vuelve a tocar o a hacer scroll.
+  function deslizarA(n) {
+    const { base, alto } = geometria();
+    const y0 = scrollY;
+    const y1 = Math.round(base + n * alto);
+    const fin = () => { deslizando = false; ultimoY = scrollY; };
+    if (reducido) { scrollTo(0, y1); fin(); return; }
+    deslizando = true;
+    const t0 = performance.now();
+    const paso = (ahora) => {
+      if (!deslizando) return; // cortado por el usuario
+      const k = Math.min(1, (ahora - t0) / DESLIZAMIENTO);
+      scrollTo(0, y0 + (y1 - y0) * (1 - (1 - k) ** 3));
+      if (k < 1) requestAnimationFrame(paso);
+      else fin();
+    };
+    requestAnimationFrame(paso);
+  }
+
+  // Un gesto nuevo corta el deslizamiento en curso: manda el usuario.
+  const alIntervenir = () => {
+    if (!deslizando) return;
+    deslizando = false;
+    ultimoY = scrollY;
+  };
 
   // La sección se queda fija entre la cabecera y, en el móvil, la barra de abajo.
   function ajustarHueco() {
@@ -273,7 +286,7 @@ export function montarRecorrido(raiz) {
     pintar();
   }
 
-  const alTocar = () => { tocando = true; };
+  const alTocar = () => { tocando = true; alIntervenir(); };
   const alSoltar = () => {
     tocando = false;
     if (!('onscrollend' in window)) {
@@ -295,6 +308,8 @@ export function montarRecorrido(raiz) {
     removeEventListener('touchstart', alTocar);
     removeEventListener('touchend', alSoltar);
     removeEventListener('touchcancel', alSoltar);
+    removeEventListener('wheel', alIntervenir);
+    removeEventListener('keydown', alIntervenir);
   }
 
   pasos[0]?.classList.add('activo');
@@ -305,6 +320,8 @@ export function montarRecorrido(raiz) {
   addEventListener('touchstart', alTocar, { passive: true });
   addEventListener('touchend', alSoltar, { passive: true });
   addEventListener('touchcancel', alSoltar, { passive: true });
+  addEventListener('wheel', alIntervenir, { passive: true });
+  addEventListener('keydown', alIntervenir);
   ajustarHueco();
   alHacerScroll();
 }
