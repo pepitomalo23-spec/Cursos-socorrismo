@@ -73,7 +73,6 @@ function iniciar() {
     <canvas class="intro-lienzo" aria-hidden="true"></canvas>
     <div class="intro-carga" hidden><span></span></div>
     <img class="intro-fija" src="assets/intro/poster.jpg" alt="" aria-hidden="true" hidden>
-    <button type="button" class="intro-saltar">Saltar</button>
     ${depurar ? '<pre class="intro-depurar"></pre>' : ''}`;
 
   const lienzo = raiz.querySelector('canvas');
@@ -306,7 +305,6 @@ function iniciar() {
   addEventListener('resize', medir);
   document.addEventListener('keydown', alPulsarTecla);
   document.addEventListener('visibilitychange', alCambiarVisibilidad);
-  raiz.querySelector('.intro-saltar').addEventListener('click', () => cerrar());
 
   // Carga en orden, unos pocos a la vez, para que lleguen antes los que antes se necesitan.
   let siguiente = 1;

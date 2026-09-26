@@ -81,7 +81,7 @@ energía) y unas imágenes no, así que la animación se ve siempre entera y exa
   (`assets/intro/poster.jpg`) y se entra en la web.
 - Encuadre: en pantallas horizontales llena la pantalla (el logo final queda en el centro);
   en verticales se ve entera, algo ampliada, sobre el color de su fondo (`#f6f5f4`).
-- Botón «Saltar» y tecla Esc. Se pausa si la pestaña deja de verse.
+- Sin botón para saltarla; con teclado, Esc la cierra. Se pausa si la pestaña deja de verse.
 - Diagnóstico en el móvil: `/?intro=depurar` enseña en pantalla qué va pasando.
 
 **Cambiar la animación:** poner el vídeo nuevo en `fuentes/` (no se publica: `.vercelignore`)
