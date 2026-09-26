@@ -34,6 +34,9 @@ JetBrains Mono, desde Google Fonts).
 index.html              esqueleto de la página
 css/estilos.css         todos los estilos (tema oscuro por defecto y claro)
 js/tema-previo.js       aplica el tema guardado antes de pintar (script normal, en <head>)
+js/intro-previo.js      decide antes de pintar si toca la intro de vídeo (una vez por visita)
+js/intro.js, css/intro.css  intro de vídeo del logo a pantalla completa
+assets/intro/           vídeo de la intro (WebM y MP4, 1080p y 720p) e imagen fija del final
 js/config.js            nombre de la escuela, contacto, nota de aprobado, penalización
 js/app.js               arranque y navegación entre pantallas (direcciones #/…)
 js/almacen.js           lectura y guardado de datos (el único archivo que cambiará con Supabase)
@@ -56,6 +59,20 @@ vercel.json             cabeceras de seguridad
 ```
 
 Los `js/` son módulos ES que el navegador carga directamente.
+
+## Intro de vídeo
+
+Al entrar en la web sale la animación del logo a pantalla completa, antes que nada; al
+terminar se funde con la web. Sale una vez por visita (para volver a verla: `/?intro`).
+
+- En pantallas horizontales el vídeo llena la pantalla (el logo final queda en el centro).
+  En verticales o casi cuadradas se muestra entero y el resto se rellena con el color del
+  fondo del vídeo (`#f6f5f4`), para no recortar el logo.
+- Se elige 1080p o 720p según la pantalla y la conexión; WebM (VP9) y, si no, MP4 (H.264).
+- Botón «Saltar» (y tecla Esc). Con «reducir movimiento» o ahorro de datos se enseña la
+  imagen fija del logo en lugar del vídeo, igual que si el vídeo no pudiera reproducirse.
+- Para cambiar el vídeo: sustituir los archivos de `assets/intro/` (mismo nombre). Si el
+  fondo del nuevo vídeo es de otro color, cambiarlo en `css/intro.css` y `js/intro.js`.
 
 ## Probarla en local
 

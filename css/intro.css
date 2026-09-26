@@ -1,0 +1,89 @@
+/* Intro de vídeo a pantalla completa (js/intro.js). El fondo es el color del propio
+   vídeo, para que las zonas sin vídeo en pantallas verticales no se noten. */
+
+#intro { display: none; }
+
+html[data-intro] #intro {
+  --intro-fondo: #f6f5f4;
+  display: block;
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  overflow: hidden;
+  background: var(--intro-fondo);
+  transition: opacity 0.7s ease;
+}
+
+/* Mientras dura la intro, la web de debajo no se desplaza ni asoma por los bordes. */
+html[data-intro] { background: #f6f5f4; }
+html[data-intro] body { overflow: hidden; }
+
+#intro.saliendo { opacity: 0; pointer-events: none; }
+
+.intro-video,
+.intro-fija {
+  position: absolute;
+  opacity: 0;
+  transition: opacity 0.35s ease;
+}
+#intro.reproduciendo .intro-video,
+#intro.reproduciendo .intro-fija:not([hidden]) { opacity: 1; }
+
+/* Pantallas horizontales (4:3 o más anchas): el vídeo llena la pantalla. Solo se recortan
+   bordes; el logo final queda en la zona central y siempre se ve entero. */
+.intro-video,
+.intro-fija {
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 50%;
+}
+
+/* Pantallas verticales o casi cuadradas (móviles, tablets de pie): recortar el vídeo
+   cortaría el logo, así que se muestra entero, algo ampliado (el logo ocupa el centro),
+   centrado en vertical y con los bordes de arriba y abajo fundidos con el fondo. */
+@media (max-aspect-ratio: 4/3) {
+  .intro-video,
+  .intro-fija {
+    inset: auto;
+    top: 50%;
+    left: 50%;
+    width: 118vw;
+    height: auto;
+    aspect-ratio: 16 / 9;
+    object-fit: cover;
+    transform: translate(-50%, -50%);
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 14%, #000 86%, transparent 100%);
+    mask-image: linear-gradient(to bottom, transparent 0, #000 14%, #000 86%, transparent 100%);
+  }
+}
+
+.intro-saltar {
+  position: absolute;
+  top: max(16px, env(safe-area-inset-top));
+  right: max(16px, env(safe-area-inset-right));
+  z-index: 2;
+  min-height: 40px;
+  padding: 0 16px;
+  border: 1px solid rgba(12, 43, 72, 0.14);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.55);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  color: #0c2b48;
+  font: 600 13px/1 'Inter', system-ui, -apple-system, sans-serif;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  opacity: 0;
+  animation: intro-aparecer 0.5s ease 0.8s forwards;
+}
+.intro-saltar:hover { background: rgba(255, 255, 255, 0.8); }
+.intro-saltar:focus-visible { outline: 2px solid #0c2b48; outline-offset: 2px; }
+#intro.saliendo .intro-saltar { display: none; }
+
+@keyframes intro-aparecer { to { opacity: 1; } }
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-intro] #intro, .intro-video, .intro-fija { transition-duration: 0.01ms; }
+}
