@@ -95,23 +95,26 @@ y ejecutar `scripts/intro-fotogramas.sh fuentes/nuevo.mp4 v2`; después cambiar 
 
 ## Recorrido por los módulos (portada)
 
-Bajo la presentación de la portada, al hacer scroll un socorrista recorre los cuatro módulos
-en la misma playa: nada (1), vigila con el silbato (2), entra al agua con el tubo de rescate
-(3) y hace una RCP con el DESA (4). Cada escena avanza con el scroll y, al acabar, se funde
-con la siguiente; al lado aparece el módulo (título y descripción, sacados de los datos) con
-dos recuadros, «Temario» y «Test», que llevan a ese módulo. La portada es también «Mis
-cursos» del alumno (ya no hay panel aparte; `#/panel` lleva a la portada): sin sesión, los
-recuadros piden entrar; con sesión, enseñan los temas y la media, o «Sin acceso» si el
+Bajo la presentación de la portada, un socorrista recorre los cuatro módulos en la misma
+playa: nada (1), vigila con el silbato (2), entra al agua con el tubo de rescate (3) y hace
+una RCP con el DESA (4). Al lado aparece el módulo (título y descripción, sacados de los
+datos) con dos recuadros, «Temario» y «Test», que llevan a ese módulo. La portada es también
+«Mis cursos» del alumno (ya no hay panel aparte; `#/panel` lleva a la portada): sin sesión,
+los recuadros piden entrar; con sesión, enseñan los temas y la media, o «Sin acceso» si el
 alumno no está matriculado en ese módulo.
 
-- Misma técnica que la intro: fotogramas en `<canvas>`, porque un vídeo movido con el scroll
-  va a saltos en el móvil. 40 fotogramas por escena en `assets/recorrido/v2/`, AVIF (WebP de
-  respaldo), a 960 px (móviles, ~3 MB en total) y 1440 px (pantallas grandes, ~5 MB).
-- No se descarga nada hasta acercarse a la sección, y se pide primero lo más útil (el
-  inicio de cada escena, luego uno de cada 8, 4, 2…): se puede bajar enseguida.
+- **De módulo en módulo:** cada gesto de scroll (rueda, trackpad o dedo) lleva al módulo
+  siguiente o al anterior y la página encaja en él. Al llegar, su escena se reproduce sola a
+  velocidad real (5 s; 2,5 s la del rescate) y se queda en el último fotograma, con un fundido
+  desde la anterior. El vídeo no va pegado al scroll, así que nunca se ve a cámara lenta.
+  Pasado el cuarto módulo, la página sigue con normalidad.
+- Misma técnica que la intro: fotogramas en `<canvas>`. 40 fotogramas por escena en
+  `assets/recorrido/v2/`, AVIF (WebP de respaldo), a 960 px (móviles, ~3 MB en total) y
+  1440 px (pantallas grandes, ~5 MB). No se descarga nada hasta acercarse a la sección, y
+  primero llega la escena del módulo en el que se está.
 - Horizontal: la escena llena el hueco con el texto encima, a la izquierda. Vertical: la
   escena arriba, centrada en el socorrista, y el texto debajo.
-- Con «reducir movimiento» se ven cuatro imágenes fijas.
+- Con «reducir movimiento» se ven cuatro imágenes fijas y se salta sin deslizamiento.
 
 **Cambiar las escenas:** poner los vídeos nuevos como `fuentes/recorrido/1.mp4` … `4.mp4` y
 ejecutar `scripts/recorrido-fotogramas.sh fuentes/recorrido v3`; después cambiar `RUTA` en
