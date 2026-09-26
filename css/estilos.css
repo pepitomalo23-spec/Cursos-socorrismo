@@ -517,6 +517,101 @@ section.vacio p { margin-bottom: 22px; }
 .portada .btn-claro { padding: 16px; border-radius: 14px; font-size: 14.5px; }
 @media (max-width: 640px) { .portada { margin-top: -24px; min-height: calc(100svh - 190px); } }
 
+/* ---------- Recorrido por los módulos (js/recorrido.js) ----------
+   La sección mide varias pantallas; su interior se queda fijo mientras las escenas avanzan
+   con el scroll. --recorrido-arriba y --recorrido-alto los pone js/recorrido.js (el hueco
+   entre la cabecera y, en el móvil, la barra de abajo). Los textos van sobre la imagen,
+   así que usan colores fijos y no los del tema. */
+
+.recorrido { position: relative; height: calc(var(--recorrido-alto, 100svh) * 5); margin: 0 0 16px; }
+.recorrido-fijo {
+  position: sticky;
+  top: var(--recorrido-arriba, 0px);
+  height: var(--recorrido-alto, 100svh);
+  overflow: hidden;
+  background: #cfe3e6;
+}
+.recorrido-lienzo { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
+.recorrido-fijo::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(4, 16, 24, 0.72) 0, rgba(4, 16, 24, 0.42) 34%, rgba(4, 16, 24, 0) 60%);
+  pointer-events: none;
+}
+.recorrido-textos {
+  position: absolute;
+  z-index: 1;
+  left: max(24px, calc((100vw - 1080px) / 2 + 24px));
+  bottom: 11%;
+  width: min(460px, 44vw);
+  height: 270px;
+  color: #fff;
+}
+.recorrido-paso {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 34px;
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 0.45s ease, transform 0.45s ease;
+}
+.recorrido-paso.activo { opacity: 1; transform: none; }
+.recorrido-etiqueta {
+  display: inline-block;
+  margin-bottom: 10px;
+  padding: 4px 9px;
+  border-radius: 7px;
+  background: var(--c);
+  color: #0b0b0b;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.recorrido-paso h2 {
+  margin: 0 0 10px;
+  font-family: var(--title);
+  font-size: clamp(30px, 3.7vw, 48px);
+  font-weight: 400;
+  line-height: 1.02;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  text-wrap: balance;
+  text-shadow: 0 2px 18px rgba(0, 0, 0, 0.35);
+}
+.recorrido-paso p { max-width: 38ch; margin: 0; color: rgba(255, 255, 255, 0.88); font-size: 15px; line-height: 1.5; }
+.recorrido-progreso { position: absolute; left: 0; bottom: 0; display: flex; gap: 6px; width: 200px; }
+.recorrido-progreso span { position: relative; flex: 1; height: 3px; overflow: hidden; border-radius: 999px; background: rgba(255, 255, 255, 0.28); }
+.recorrido-progreso span::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: #fff;
+  transform: scaleX(var(--lleno, 0));
+  transform-origin: left;
+}
+
+/* En vertical: la imagen arriba (centrada en el socorrista) y el texto debajo. */
+@media (max-aspect-ratio: 4 / 5) {
+  .recorrido-fijo { background: var(--bg); }
+  .recorrido-lienzo { height: 60%; }
+  .recorrido-fijo::after { inset: 0 0 40% 0; background: linear-gradient(to bottom, rgba(0, 0, 0, 0) 72%, var(--bg)); }
+  .recorrido-textos { left: 16px; right: 16px; top: 60%; bottom: 0; width: auto; height: auto; color: var(--text); }
+  .recorrido-paso { top: 6px; bottom: auto; }
+  .recorrido-paso h2 { font-size: clamp(26px, 8vw, 34px); text-shadow: none; }
+  .recorrido-paso p { color: var(--muted); font-size: 14px; }
+  .recorrido-progreso { bottom: 18px; width: 100%; }
+  .recorrido-progreso span { background: var(--line); }
+  .recorrido-progreso span::after { background: var(--text); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .recorrido-paso { transition: none; }
+}
+
 .lista-cursos { display: flex; flex-direction: column; gap: 8px; }
 .curso-fila {
   display: flex;

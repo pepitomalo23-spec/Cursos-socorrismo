@@ -41,8 +41,10 @@ js/tema-previo.js       aplica el tema guardado antes de pintar (script normal, 
 js/intro-previo.js      decide antes de pintar si toca la intro (una vez por visita)
 js/intro.js, css/intro.css  intro del logo a pantalla completa (fotogramas en <canvas>)
 assets/intro/           fotogramas de la intro e imagen fija del final
-fuentes/                vídeo original de la intro (no se publica)
-scripts/                intro-fotogramas.sh: genera los fotogramas desde el vídeo (no se publica)
+js/recorrido.js         recorrido por los 4 módulos en la portada (escenas que avanzan con el scroll)
+assets/recorrido/       fotogramas del recorrido
+fuentes/                vídeos originales de la intro y del recorrido (no se publican)
+scripts/                genera los fotogramas desde los vídeos (no se publica)
 js/config.js            nombre de la escuela, contacto, nota de aprobado, penalización
 js/app.js               arranque y navegación entre pantallas (direcciones #/…)
 js/almacen.js           lectura y guardado de datos (el único archivo que cambiará con Supabase)
@@ -91,6 +93,27 @@ energía) y unas imágenes no, así que la animación se ve siempre entera y exa
 **Cambiar la animación:** poner el vídeo nuevo en `fuentes/` (no se publica: `.vercelignore`)
 y ejecutar `scripts/intro-fotogramas.sh fuentes/nuevo.mp4 v2`; después cambiar `RUTA` en
 `js/intro.js` a `v2` (y `TOTAL`/`FPS` si el vídeo no tiene 121 fotogramas a 24 por segundo).
+
+## Recorrido por los módulos (portada)
+
+Bajo la presentación de la portada, al hacer scroll un socorrista recorre los cuatro módulos
+en la misma playa: nada (1), vigila con el silbato (2), entra al agua con el tubo de rescate
+(3) y hace una RCP con el DESA (4). Cada escena avanza con el scroll y, al acabar, se funde
+con la siguiente; al lado aparece el módulo (título y descripción, sacados de los datos).
+
+- Misma técnica que la intro: fotogramas en `<canvas>`, porque un vídeo movido con el scroll
+  va a saltos en el móvil. 40 fotogramas por escena en `assets/recorrido/v1/`, AVIF (WebP de
+  respaldo), a 960 px (móviles, ~3 MB en total) y 1440 px (pantallas grandes, ~5 MB).
+- No se descarga nada hasta acercarse a la sección, y se pide primero lo más útil (el
+  inicio de cada escena, luego uno de cada 8, 4, 2…): se puede bajar enseguida.
+- Horizontal: la escena llena el hueco con el texto encima, a la izquierda. Vertical: la
+  escena arriba, centrada en el socorrista, y el texto debajo.
+- Con «reducir movimiento» se ven cuatro imágenes fijas.
+
+**Cambiar las escenas:** poner los vídeos nuevos como `fuentes/recorrido/1.mp4` … `4.mp4` y
+ejecutar `scripts/recorrido-fotogramas.sh fuentes/recorrido v2`; después cambiar `RUTA` en
+`js/recorrido.js` a `v2`. Las escenas actuales se hicieron con IA (GPT Image 2.5 para las
+imágenes y Kling 3.0 para animarlas), con la cámara fija para que el fondo encaje entre ellas.
 
 ## Probarla en local
 

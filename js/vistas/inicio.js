@@ -4,11 +4,17 @@ import { ESCUELA } from '../config.js';
 import * as almacen from '../almacen.js';
 import * as sesion from '../sesion.js';
 import { emblemaCurso, esc, estiloCurso, etiquetaModulo, icono, titulo } from '../utiles.js';
+import { montarRecorrido } from '../recorrido.js';
+
+// Textos del recorrido si falta algún módulo en los datos.
+const MODULOS_BASE = ['Natación', 'Prevención de accidentes en instalaciones acuáticas', 'Rescate de accidentados en instalaciones acuáticas', 'Primeros auxilios'];
 
 export async function render(el) {
   titulo('');
   const cursos = await almacen.cursos();
   const u = sesion.usuario();
+  const recorrido = MODULOS_BASE.map((nombre, i) =>
+    cursos.find((c) => Number(c.modulo) === i + 1) ?? { titulo: nombre, descripcion: '' });
 
   el.innerHTML = `
     <section class="portada">
@@ -18,6 +24,21 @@ export async function render(el) {
       <div class="portada-botones">
         <a class="btn btn-claro btn-bloque" href="${u ? '#/panel' : '#/acceso'}">${u ? 'Ir a mis cursos' : 'Acceso alumnos'}</a>
         <a class="btn-portada" href="#cursos" data-desplazar="cursos">${icono('libro')} Ver módulos</a>
+      </div>
+    </section>
+
+    <section class="recorrido" aria-label="Los cuatro módulos del curso">
+      <div class="recorrido-fijo">
+        <canvas class="recorrido-lienzo" aria-hidden="true"></canvas>
+        <div class="recorrido-textos">
+          ${recorrido.map((c, i) => `
+            <div class="recorrido-paso color-${estiloCurso(i)[0]}">
+              <span class="recorrido-etiqueta">Módulo ${i + 1}</span>
+              <h2>${esc(c.titulo)}</h2>
+              ${c.descripcion ? `<p>${esc(c.descripcion)}</p>` : ''}
+            </div>`).join('')}
+          <div class="recorrido-progreso" aria-hidden="true">${recorrido.map(() => '<span></span>').join('')}</div>
+        </div>
       </div>
     </section>
 
@@ -68,6 +89,8 @@ export async function render(el) {
         </div>
       </div>
     </section>`;
+
+  montarRecorrido(el.querySelector('.recorrido'));
 
   // «Ver cursos» baja hasta la lista sin cambiar la dirección.
   el.querySelector('[data-desplazar]').addEventListener('click', (e) => {
