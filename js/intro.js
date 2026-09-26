@@ -1,58 +1,59 @@
-// Intro de vídeo a pantalla completa al entrar en la web: la animación del logo.
+// Intro a pantalla completa al entrar en la web: la animación del logo.
 //
-// Sale una vez por visita, antes de que se vea nada: js/intro-previo.js marca
-// <html data-intro> en <head> y css/intro.css tapa la página desde el primer instante.
-// Al terminar, el último fotograma se mantiene un momento y la intro se funde con la web,
-// que ya se ha cargado debajo. Para volver a verla: añadir ?intro a la dirección.
+// Técnica: secuencia de fotogramas dibujada en un <canvas> (como las páginas de producto
+// de Apple), no un <video>. Un vídeo depende de que el navegador le deje arrancar solo, y
+// los móviles lo bloquean a veces (iPhone en ahorro de energía); unas imágenes no, así que
+// la animación se ve siempre entera, igual en todos los navegadores.
 //
-// Encuadre (ver css/intro.css): en pantallas horizontales el vídeo llena la pantalla;
-// en verticales se muestra entero y el resto se rellena con el color de su fondo,
-// para no recortar el logo.
+// - Los 121 fotogramas (AVIF, o WebP si el navegador no tiene AVIF; 24 por segundo) se
+//   cargan en orden y el primero se enseña en
+//   cuanto llega. La animación empieza cuando, al ritmo al que están llegando, el resto
+//   estará antes de hacer falta (con buena conexión, casi al momento). Si la red se frena
+//   a mitad, espera en el último fotograma y sigue al llegar el siguiente (sin saltos).
+// - El avance lo marca el reloj, no el número de repintados: dura siempre lo mismo aunque
+//   el móvil vaya justo (salta fotogramas en vez de ralentizarse).
+// - Se pausa si la pestaña deja de verse y sigue al volver.
+// - Encuadre: en pantallas horizontales la animación llena la pantalla (el logo final queda
+//   en el centro); en verticales se ve entera, algo ampliada, sobre el color de su fondo.
+//
+// Sale una vez por visita: js/intro-previo.js marca <html data-intro> en <head> y
+// css/intro.css tapa la página desde el primer instante. Para volver a verla: ?intro.
+// Diagnóstico en el móvil: ?intro=depurar. Para cambiar la animación: scripts/intro-fotogramas.sh.
 
 const CLAVE_VISTA = 'escuela.intro.vista';
+const FPS = 24;
+const TOTAL = 121;
+const RUTA = 'assets/intro/fotogramas/v1'; // cambiar la versión al cambiar los fotogramas
+const PROPORCION = 16 / 9;
+const AMPLIACION_VERTICAL = 1.18; // en vertical, cuánto más ancha que la pantalla se dibuja
+const FUNDIDO = 0.14; // en vertical, parte de arriba y abajo que se funde con el fondo
 const PAUSA_FINAL = 700; // ms con el logo quieto antes de fundirse con la web
-const ESPERA_MAXIMA = 12000; // ms de descarga (con la página visible) antes de rendirse
-const AVISO_CARGA = 900; // ms de descarga tras los que aparece la barra de progreso
-const COLOR_FONDO = '#f6f5f4'; // fondo del vídeo, también para la barra del navegador
-
-// El vídeo se descarga entero antes de reproducirlo: pesa poco y así se ve siempre
-// completo y fluido, sin paradas a mitad ni cortes por mala cobertura.
-const VIDEOS = {
-  webm: { alta: 'assets/intro/intro-1080.webm', baja: 'assets/intro/intro-720.webm' },
-  mp4: { alta: 'assets/intro/intro-1080.mp4', baja: 'assets/intro/intro-720.mp4' },
-};
+const ESPERA_MAXIMA = 15000; // ms de carga (con la página a la vista) antes de rendirse
+const ESTIMAR_TRAS = 4000; // ms de carga tras los que se estima si merece la pena esperar
+const ESPERA_ESTIMADA = 8000; // si para empezar faltarían más de estos ms, se enseña el logo
+const AVISO_CARGA = 900; // ms de carga tras los que aparece la barra de progreso
+const EN_PARALELO = 8; // fotogramas que se piden a la vez
+const MARGEN = 0.8; // se cuenta con el 80 % del ritmo de carga medido, por si baja
+const COLOR_FONDO = '#f6f5f4'; // fondo de la animación, también para la barra del navegador
 
 const raiz = document.getElementById('intro');
 const html = document.documentElement;
 
-function elegirVideo(video) {
-  // WebM (más ligero) solo si el navegador asegura que lo reproduce; si no, MP4 (H.264),
-  // que funciona en todos, incluido el iPhone.
-  const formato = video.canPlayType('video/webm; codecs="vp9"') === 'probably' ? 'webm' : 'mp4';
-  // 1080p solo en pantallas grandes con buena conexión; en el móvil basta 720p.
-  const conexion = navigator.connection;
-  const lenta = conexion && (/2g|3g/.test(conexion.effectiveType ?? '') || conexion.downlink < 2);
-  const grande = Math.max(innerWidth, innerHeight) >= 1100 && Math.min(innerWidth, innerHeight) >= 600;
-  return VIDEOS[formato][grande && !lenta ? 'alta' : 'baja'];
+const numero = (i) => String(i + 1).padStart(3, '0');
+
+function horizontal(ancho, alto) {
+  return ancho / alto >= 4 / 3;
 }
 
-// Descarga el vídeo avisando del progreso (0 a 1). Devuelve un Blob.
-async function descargar(url, alProgreso, senal) {
-  const respuesta = await fetch(url, { signal: senal });
-  if (!respuesta.ok) throw new Error(`HTTP ${respuesta.status}`);
-  const total = Number(respuesta.headers.get('content-length')) || 0;
-  if (!respuesta.body || !total) return respuesta.blob();
-  const lector = respuesta.body.getReader();
-  const trozos = [];
-  let recibido = 0;
-  for (;;) {
-    const { done, value } = await lector.read();
-    if (done) break;
-    trozos.push(value);
-    recibido += value.length;
-    alProgreso(recibido / total);
-  }
-  return new Blob(trozos, { type: respuesta.headers.get('content-type') || 'video/mp4' });
+// Resolución de los fotogramas según lo grande que se van a dibujar en píxeles reales.
+function resolucion() {
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const ancho = horizontal(innerWidth, innerHeight)
+    ? Math.max(innerWidth, innerHeight * PROPORCION)
+    : innerWidth * AMPLIACION_VERTICAL;
+  const conexion = navigator.connection;
+  const lenta = conexion && (conexion.saveData || /2g|3g/.test(conexion.effectiveType ?? '') || conexion.downlink < 1.5);
+  return ancho * dpr > 1200 && !lenta ? 1600 : 1080;
 }
 
 function iniciar() {
@@ -63,190 +64,273 @@ function iniciar() {
     // Sin almacenamiento: volverá a salir en la próxima visita.
   }
 
-  // Con «?intro=depurar» se ve en pantalla qué va haciendo la intro (para móviles).
   const depurar = /[?&]intro=depurar(&|$)/.test(location.search);
-
   const meta = document.querySelector('meta[name="theme-color"]');
   const colorAnterior = meta?.getAttribute('content');
   meta?.setAttribute('content', COLOR_FONDO);
 
   raiz.innerHTML = `
-    <video class="intro-video" muted playsinline preload="auto"
-           disablepictureinpicture disableremoteplayback tabindex="-1" aria-hidden="true"></video>
+    <canvas class="intro-lienzo" aria-hidden="true"></canvas>
     <div class="intro-carga" hidden><span></span></div>
-    <button type="button" class="intro-tocar" aria-label="Ver la intro" hidden>
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z" fill="currentColor"/></svg>
-    </button>
     <img class="intro-fija" src="assets/intro/poster.jpg" alt="" aria-hidden="true" hidden>
     <button type="button" class="intro-saltar">Saltar</button>
     ${depurar ? '<pre class="intro-depurar"></pre>' : ''}`;
 
-  const video = raiz.querySelector('video');
-  const fija = raiz.querySelector('.intro-fija');
+  const lienzo = raiz.querySelector('canvas');
+  const ctx = lienzo.getContext('2d', { alpha: false });
   const carga = raiz.querySelector('.intro-carga');
-  const tocar = raiz.querySelector('.intro-tocar');
+  const fija = raiz.querySelector('.intro-fija');
   const registro = raiz.querySelector('.intro-depurar');
-  const controlador = new AbortController();
-  const urlDirecta = elegirVideo(video);
-  const inicio = performance.now();
+  const res = resolucion();
+  const fotogramas = new Array(TOTAL);
+  const t0 = performance.now();
+  let formato = 'avif'; // pasa a 'webp' si el navegador no puede con el primero en AVIF
+  let cargados = 0;
+  let seguidos = 0; // fotogramas cargados sin huecos desde el primero
+  let empezada = false;
   let cerrada = false;
-  let urlBlob = null;
-  let vigilante = null;
+  let reproduciendo = false;
+  let actual = -1;
+  let raf = 0;
+  let anterior = null; // instante del repintado anterior
+  let transcurrido = 0; // ms de animación ya vistos (no avanza mientras espera a la red)
 
   function anotar(texto) {
-    if (registro) registro.textContent += `${Math.round(performance.now() - inicio)} ms · ${texto}\n`;
+    if (registro) registro.textContent += `${Math.round(performance.now() - t0)} ms · ${texto}\n`;
   }
-  anotar(`${navigator.userAgent.replace(/^Mozilla\/5\.0 /, '')}`);
-  anotar(`vídeo: ${urlDirecta.split('/').pop()} · pantalla ${innerWidth}×${innerHeight}`);
+  anotar(navigator.userAgent.replace(/^Mozilla\/5\.0 /, ''));
+  anotar(`fotogramas de ${res} px · pantalla ${innerWidth}×${innerHeight} · dpr ${window.devicePixelRatio}`);
+
+  // ---------- Dibujo ----------
+
+  let ancho = 0;
+  let alto = 0;
+  function medir() {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    ancho = innerWidth;
+    alto = innerHeight;
+    lienzo.width = Math.round(ancho * dpr);
+    lienzo.height = Math.round(alto * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    if (actual >= 0) dibujar(actual);
+  }
+
+  function dibujar(i) {
+    const img = fotogramas[i];
+    if (!img) return;
+    ctx.fillStyle = COLOR_FONDO;
+    ctx.fillRect(0, 0, ancho, alto);
+    let w;
+    let h;
+    const lleno = horizontal(ancho, alto);
+    if (lleno) {
+      // Llena la pantalla recortando solo bordes.
+      h = Math.max(ancho / PROPORCION, alto);
+      w = h * PROPORCION;
+    } else {
+      w = ancho * AMPLIACION_VERTICAL;
+      h = w / PROPORCION;
+    }
+    const x = (ancho - w) / 2;
+    const y = (alto - h) / 2;
+    ctx.drawImage(img, x, y, w, h);
+    if (!lleno) {
+      // Funde los bordes de arriba y abajo con el fondo para que no se note el corte.
+      const f = h * FUNDIDO;
+      for (const [desde, hasta] of [[y, y + f], [y + h, y + h - f]]) {
+        const degradado = ctx.createLinearGradient(0, desde, 0, hasta);
+        degradado.addColorStop(0, COLOR_FONDO);
+        degradado.addColorStop(1, 'rgba(246, 245, 244, 0)');
+        ctx.fillStyle = degradado;
+        ctx.fillRect(0, Math.min(desde, hasta), ancho, f);
+      }
+    }
+    actual = i;
+  }
+
+  // ---------- Reproducción ----------
+
+  function bucle(ahora) {
+    if (cerrada) return;
+    const paso = anterior === null ? 0 : Math.min(ahora - anterior, 250);
+    anterior = ahora;
+    let i = Math.min(TOTAL - 1, Math.floor(((transcurrido + paso) / 1000) * FPS));
+    if (i < seguidos) {
+      transcurrido += paso;
+      carga.hidden = true;
+    } else {
+      // El fotograma aún no ha llegado: el reloj se para en el último disponible.
+      i = seguidos - 1;
+      if (i >= 0 && actual !== i) anotar(`esperando al fotograma ${numero(i + 1)}`);
+    }
+    if (i !== actual) dibujar(i);
+    if (i >= TOTAL - 1) {
+      anotar('terminado');
+      cerrar(PAUSA_FINAL);
+      return;
+    }
+    raf = requestAnimationFrame(bucle);
+  }
+
+  function reproducir() {
+    if (!empezada || reproduciendo || cerrada || document.visibilityState !== 'visible') return;
+    reproduciendo = true;
+    anterior = null;
+    raf = requestAnimationFrame(bucle);
+  }
+
+  function pausar() {
+    reproduciendo = false;
+    cancelAnimationFrame(raf);
+  }
+
+  function alCambiarVisibilidad() {
+    if (document.visibilityState === 'visible') {
+      reproducir();
+    } else {
+      pausar();
+    }
+  }
+
+  // ---------- Cierre ----------
 
   function cerrar(retardo = 0) {
     if (cerrada) return;
     cerrada = true;
-    controlador.abort();
-    clearInterval(vigilante);
+    pausar();
+    clearInterval(reloj);
+    removeEventListener('resize', medir);
     document.removeEventListener('keydown', alPulsarTecla);
     document.removeEventListener('visibilitychange', alCambiarVisibilidad);
     setTimeout(() => {
       raiz.classList.add('saliendo');
       if (colorAnterior) meta?.setAttribute('content', colorAnterior);
       setTimeout(() => {
-        video.pause();
+        for (const img of fotogramas) if (img) img.src = '';
         raiz.remove();
-        if (urlBlob) URL.revokeObjectURL(urlBlob);
         html.removeAttribute('data-intro');
         document.getElementById('principal')?.focus({ preventScroll: true });
       }, 700);
     }, depurar ? Math.max(retardo, 8000) : retardo);
   }
 
-  // Último recurso, si el vídeo no se puede reproducir de ninguna forma: el logo terminado.
+  // Último recurso, si los fotogramas no llegan: el logo terminado, un momento.
   function imagenFija(motivo) {
     if (cerrada) return;
     anotar(`imagen fija: ${motivo}`);
-    video.hidden = true;
+    lienzo.hidden = true;
     carga.hidden = true;
-    tocar.hidden = true;
     fija.hidden = false;
-    raiz.classList.add('reproduciendo');
+    raiz.classList.add('visible');
     cerrar(1400);
   }
-
-  // El navegador no deja arrancar el vídeo solo (p. ej. iPhone en ahorro de energía):
-  // se pide un toque, que sí lo permite, y el vídeo se ve entero.
-  function pedirToque() {
-    if (cerrada || !tocar.hidden) return;
-    anotar('el navegador no deja reproducir solo: se pide un toque');
-    clearInterval(vigilante);
-    carga.hidden = true;
-    tocar.hidden = false;
-  }
-  tocar.addEventListener('click', () => {
-    tocar.hidden = true;
-    video.muted = true;
-    video.play()?.catch((error) => imagenFija(`tras el toque: ${error?.name}`));
-  });
 
   function alPulsarTecla(e) {
     if (e.key === 'Escape') cerrar();
   }
-  document.addEventListener('keydown', alPulsarTecla);
-  raiz.querySelector('.intro-saltar').addEventListener('click', () => cerrar());
 
-  // Si se abre la web con la pestaña en segundo plano (o se cambia de app), el navegador
-  // pausa el vídeo: al volver, sigue donde estaba en vez de quedarse parado.
-  function alCambiarVisibilidad() {
-    if (document.visibilityState === 'visible' && video.src && video.paused && !video.ended && tocar.hidden) reproducir();
-  }
-  document.addEventListener('visibilitychange', alCambiarVisibilidad);
+  // ---------- Carga ----------
 
-  function reproducir() {
-    video.muted = true;
-    video.play()?.catch((error) => {
-      anotar(`play() rechazado: ${error?.name}`);
-      // AbortError: el navegador interrumpió el arranque y lo reintenta solo.
-      if (error?.name === 'NotAllowedError') pedirToque();
-    });
-  }
-
-  // Pone el vídeo (en memoria o desde su dirección) y lo arranca. Si en 4 s a la vista
-  // no ha empezado: con el de memoria se prueba la dirección normal; con esta, se pide un toque.
-  function ponerVideo(url) {
-    anotar(`reproducir desde ${url.startsWith('blob:') ? 'memoria' : 'la dirección normal'}`);
-    video.src = url;
-    video.load();
-    if (document.visibilityState === 'visible') reproducir();
-    clearInterval(vigilante);
-    let sinArrancar = 0;
-    vigilante = setInterval(() => {
-      if (cerrada || raiz.classList.contains('reproduciendo')) return clearInterval(vigilante);
-      if (document.visibilityState !== 'visible' || !tocar.hidden) return;
-      sinArrancar += 250;
-      if (sinArrancar >= 4000) {
-        clearInterval(vigilante);
-        anotar('no arranca en 4 s');
-        if (url.startsWith('blob:')) ponerVideo(urlDirecta);
-        else pedirToque();
-      }
-    }, 250);
-  }
-
-  video.addEventListener('playing', () => {
-    anotar(`reproduciendo desde t=${video.currentTime.toFixed(2)}`);
-    raiz.classList.add('reproduciendo');
-  });
-  video.addEventListener('ended', () => {
-    anotar('terminado');
-    cerrar(PAUSA_FINAL);
-  });
-  video.addEventListener('error', () => {
-    const codigo = video.error?.code;
-    anotar(`error del vídeo (código ${codigo})`);
-    if (cerrada) return;
-    if (video.src.startsWith('blob:')) ponerVideo(urlDirecta);
-    else imagenFija(`error ${codigo}`);
-  });
-  // Por si algún navegador no avisa del final: se da por terminado en la última décima.
-  video.addEventListener('timeupdate', () => {
-    if (video.duration && video.currentTime >= video.duration - 0.1) {
-      setTimeout(() => { if (!cerrada) cerrar(PAUSA_FINAL); }, 150);
-    }
-  });
-
-  // Se descarga entero antes de reproducirlo. La espera solo cuenta con la página a la
-  // vista; si se pasa de ESPERA_MAXIMA, se reproduce directamente desde su dirección.
+  // La espera hasta empezar solo cuenta con la página a la vista. Si la conexión es tan
+  // lenta que tardaría mucho en poder empezar, se enseña el logo en vez de hacer esperar.
   let esperado = 0;
-  let descargado = false;
   const reloj = setInterval(() => {
-    if (cerrada || descargado) return clearInterval(reloj);
+    if (cerrada || empezada) return clearInterval(reloj);
     if (document.visibilityState !== 'visible') return;
     esperado += 250;
     if (esperado >= AVISO_CARGA) carga.hidden = false;
-    if (esperado >= ESPERA_MAXIMA) {
-      clearInterval(reloj);
-      descargado = true;
-      controlador.abort();
-      carga.hidden = true;
-      anotar('la descarga tarda demasiado');
-      ponerVideo(urlDirecta);
+    if (esperado >= ESPERA_MAXIMA) return imagenFija(`carga incompleta (${cargados}/${TOTAL})`);
+    const ritmo = ritmoCarga();
+    if (esperado >= ESTIMAR_TRAS && ritmo) {
+      const necesarios = TOTAL - ((TOTAL - 1) / FPS) * ritmo;
+      const falta = Math.max(0, necesarios - seguidos) / ritmo;
+      if (falta * 1000 > ESPERA_ESTIMADA) {
+        imagenFija(`conexión lenta: faltarían ${Math.round(falta)} s para poder empezar`);
+      }
     }
   }, 250);
 
-  descargar(urlDirecta, (parte) => { carga.firstElementChild.style.width = `${Math.round(parte * 100)}%`; }, controlador.signal)
-    .then((blob) => {
-      if (cerrada || descargado) return;
-      descargado = true;
-      carga.hidden = true;
-      anotar(`descargado (${Math.round(blob.size / 1024)} KB, ${blob.type})`);
-      urlBlob = URL.createObjectURL(blob);
-      ponerVideo(urlBlob);
-    })
-    .catch((error) => {
-      if (cerrada || descargado) return;
-      descargado = true;
-      carga.hidden = true;
-      anotar(`no se pudo descargar (${error?.name}): se usa la dirección normal`);
-      ponerVideo(urlDirecta);
+  function cargar(i) {
+    return new Promise((resolver, rechazar) => {
+      const img = new Image();
+      img.decoding = 'async';
+      img.onload = () => {
+        // decode() deja la imagen lista para dibujar sin tirones.
+        (img.decode ? img.decode().catch(() => {}) : Promise.resolve()).then(() => resolver(img));
+      };
+      img.onerror = () => rechazar(new Error(`fotograma ${numero(i)}.${formato}`));
+      img.src = `${RUTA}/${res}/${numero(i)}.${formato}`;
     });
+  }
+
+  // ¿Se puede empezar ya? Sí, si al ritmo de carga medido (con margen) cada fotograma que
+  // falta llegará antes de su momento. El peor caso es el último.
+  // Ritmo de llegada medido desde que se piden varios a la vez (tras el primero), con
+  // margen por si baja. En fotogramas por segundo; 0 mientras no hay datos suficientes.
+  let inicioParalelo = 0;
+  function ritmoCarga() {
+    const llegados = cargados - 1;
+    const segundos = (performance.now() - inicioParalelo) / 1000;
+    return inicioParalelo && llegados >= EN_PARALELO && segundos > 0 ? (llegados / segundos) * MARGEN : 0;
+  }
+  function puedeEmpezar() {
+    if (seguidos === TOTAL) return true;
+    const ritmo = ritmoCarga();
+    if (seguidos < Math.min(12, TOTAL) || !ritmo) return false;
+    return (TOTAL - seguidos) / ritmo <= (TOTAL - 1) / FPS;
+  }
+
+  function alCargar(i, img) {
+    if (cerrada) return;
+    fotogramas[i] = img;
+    cargados++;
+    while (seguidos < TOTAL && fotogramas[seguidos]) seguidos++;
+    carga.firstElementChild.style.width = `${Math.round((cargados / TOTAL) * 100)}%`;
+    // El primer fotograma se enseña en cuanto llega, mientras carga el resto.
+    if (i === 0 && !empezada) {
+      dibujar(0);
+      raiz.classList.add('visible');
+    }
+    if (!empezada && puedeEmpezar()) {
+      empezada = true;
+      carga.hidden = true;
+      anotar(`empieza con ${seguidos}/${TOTAL} fotogramas`);
+      reproducir();
+    }
+    if (cargados === TOTAL) anotar(`${TOTAL} fotogramas listos`);
+  }
+
+  medir();
+  addEventListener('resize', medir);
+  document.addEventListener('keydown', alPulsarTecla);
+  document.addEventListener('visibilitychange', alCambiarVisibilidad);
+  raiz.querySelector('.intro-saltar').addEventListener('click', () => cerrar());
+
+  // Carga en orden, unos pocos a la vez, para que lleguen antes los que antes se necesitan.
+  let siguiente = 1;
+  function pedirSiguiente() {
+    if (cerrada || siguiente >= TOTAL) return;
+    const i = siguiente++;
+    cargar(i)
+      .then((img) => { alCargar(i, img); pedirSiguiente(); })
+      .catch((error) => imagenFija(`no se pudo cargar el ${error.message}`));
+  }
+
+  // El primero va solo y decide el formato: si el AVIF no se puede ver, todo en WebP.
+  cargar(0)
+    .catch(() => {
+      formato = 'webp';
+      return cargar(0);
+    })
+    .then((img) => {
+      anotar(`formato: ${formato}`);
+      inicioParalelo = performance.now();
+      alCargar(0, img);
+      for (let n = 0; n < EN_PARALELO; n++) pedirSiguiente();
+    })
+    .catch((error) => imagenFija(`no se pudo cargar el ${error.message}`));
 }
 
 iniciar();

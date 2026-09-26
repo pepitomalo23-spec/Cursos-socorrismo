@@ -34,9 +34,11 @@ JetBrains Mono, desde Google Fonts).
 index.html              esqueleto de la página
 css/estilos.css         todos los estilos (tema oscuro por defecto y claro)
 js/tema-previo.js       aplica el tema guardado antes de pintar (script normal, en <head>)
-js/intro-previo.js      decide antes de pintar si toca la intro de vídeo (una vez por visita)
-js/intro.js, css/intro.css  intro de vídeo del logo a pantalla completa
-assets/intro/           vídeo de la intro (WebM y MP4, 1080p y 720p) e imagen fija del final
+js/intro-previo.js      decide antes de pintar si toca la intro (una vez por visita)
+js/intro.js, css/intro.css  intro del logo a pantalla completa (fotogramas en <canvas>)
+assets/intro/           fotogramas de la intro e imagen fija del final
+fuentes/                vídeo original de la intro (no se publica)
+scripts/                intro-fotogramas.sh: genera los fotogramas desde el vídeo (no se publica)
 js/config.js            nombre de la escuela, contacto, nota de aprobado, penalización
 js/app.js               arranque y navegación entre pantallas (direcciones #/…)
 js/almacen.js           lectura y guardado de datos (el único archivo que cambiará con Supabase)
@@ -60,25 +62,31 @@ vercel.json             cabeceras de seguridad
 
 Los `js/` son módulos ES que el navegador carga directamente.
 
-## Intro de vídeo
+## Intro
 
 Al entrar en la web sale la animación del logo a pantalla completa, antes que nada; al
 terminar se funde con la web. Sale una vez por visita (para volver a verla: `/?intro`).
 
-- En pantallas horizontales el vídeo llena la pantalla (el logo final queda en el centro).
-  En verticales o casi cuadradas se muestra entero y el resto se rellena con el color del
-  fondo del vídeo (`#f6f5f4`), para no recortar el logo.
-- El vídeo se descarga entero antes de reproducirse (pesa 0,2–0,9 MB), para que se vea
-  siempre completo y fluido aunque la cobertura sea mala; si tarda, se ve una barra de
-  progreso. 1080p solo en pantallas grandes con buena conexión (en el móvil, 720p); WebM
-  (VP9) si el navegador lo asegura y, si no, MP4 (H.264), que funciona en todos.
-- Si la web se abre con la pestaña en segundo plano, el vídeo sigue al volver a ella.
-- Botón «Saltar» (y tecla Esc). Si el navegador no deja arrancar el vídeo solo (iPhone en
-  ahorro de energía), aparece un botón de reproducir. Si el vídeo desde memoria no arranca,
-  se reproduce desde su dirección normal. La imagen fija del logo solo sale si todo falla.
-- Diagnóstico en el móvil: abrir `/?intro=depurar` enseña en pantalla qué va pasando.
-- Para cambiar el vídeo: sustituir los archivos de `assets/intro/` (mismo nombre). Si el
-  fondo del nuevo vídeo es de otro color, cambiarlo en `css/intro.css` y `js/intro.js`.
+**Técnica: secuencia de fotogramas en `<canvas>`** (como las páginas de producto de Apple),
+no un `<video>`: los móviles pueden bloquear que un vídeo arranque solo (iPhone en ahorro de
+energía) y unas imágenes no, así que la animación se ve siempre entera y exacta.
+
+- 121 fotogramas (5 s a 24 por segundo) en `assets/intro/fotogramas/v1/`, en AVIF (el que
+  se usa) y WebP (respaldo si el navegador no tiene AVIF), a 1080 px de ancho (móviles,
+  ~0,8 MB) y 1600 px (pantallas grandes, ~1,2 MB). Se guardan en caché un año.
+- Se cargan en orden y la animación empieza cuando, al ritmo al que llegan, el resto estará
+  antes de hacer falta (con 4G, al momento; con 3G, a los ~3 s). Si la red se frena a mitad,
+  espera en el último fotograma sin saltos. El reloj marca el avance: dura siempre 5 s.
+- Con una conexión tan lenta que habría que esperar demasiado, se enseña el logo terminado
+  (`assets/intro/poster.jpg`) y se entra en la web.
+- Encuadre: en pantallas horizontales llena la pantalla (el logo final queda en el centro);
+  en verticales se ve entera, algo ampliada, sobre el color de su fondo (`#f6f5f4`).
+- Botón «Saltar» y tecla Esc. Se pausa si la pestaña deja de verse.
+- Diagnóstico en el móvil: `/?intro=depurar` enseña en pantalla qué va pasando.
+
+**Cambiar la animación:** poner el vídeo nuevo en `fuentes/` (no se publica: `.vercelignore`)
+y ejecutar `scripts/intro-fotogramas.sh fuentes/nuevo.mp4 v2`; después cambiar `RUTA` en
+`js/intro.js` a `v2` (y `TOTAL`/`FPS` si el vídeo no tiene 121 fotogramas a 24 por segundo).
 
 ## Probarla en local
 
