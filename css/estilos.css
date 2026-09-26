@@ -466,16 +466,21 @@ section.vacio p { margin-bottom: 22px; }
 
 /* ---------- Portada ---------- */
 
+/* Bienvenida (js/bienvenida.js): el logo grande y difuminado de fondo, que al hacer scroll
+   vuela hasta la esquina de la cabecera. Ocupa la pantalla visible bajo la cabecera. */
 .portada {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: min(620px, calc(100svh - 160px));
+  min-height: calc(100svh - 70px);
   margin-top: -32px;
-  padding: 56px 24px 48px;
+  padding: 48px 24px 96px;
+  overflow-x: clip;
   text-align: center;
 }
+.portada-texto { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; }
 .portada-lugar {
   display: inline-flex;
   align-items: center;
@@ -489,27 +494,103 @@ section.vacio p { margin-bottom: 22px; }
   text-transform: uppercase;
 }
 .portada-lugar .icono { width: 16px; height: 16px; }
-.portada-titulo { margin: 0 0 16px; font-size: clamp(44px, 10vw, 76px); line-height: 1.02; letter-spacing: 0.5px; text-wrap: balance; }
-.portada-lema { max-width: 38ch; margin: 0 0 40px; color: var(--muted); font-size: 15px; line-height: 1.55; }
-.portada-botones { display: flex; flex-direction: column; gap: 13px; width: 100%; max-width: 340px; }
-.btn-portada {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  padding: 16px;
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  background: var(--card);
-  color: var(--text);
-  font-weight: 600;
-  font-size: 14.5px;
-  text-decoration: none !important;
+.portada-titulo {
+  margin: 0 0 16px;
+  font-size: clamp(56px, 13vw, 118px);
+  line-height: 0.98;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  text-wrap: balance;
+  text-shadow: 0 4px 30px var(--bg);
 }
-.btn-portada:hover { border-color: var(--muted-2); }
-.btn-portada .icono { width: 18px; height: 18px; color: var(--muted); }
-.portada .btn-claro { padding: 16px; border-radius: 14px; font-size: 14.5px; }
-@media (max-width: 640px) { .portada { margin-top: -24px; min-height: calc(100svh - 190px); } }
+.portada-lema { max-width: 36ch; margin: 0; color: var(--muted); font-size: 16px; line-height: 1.55; }
+
+/* Hueco que marca dónde empieza el logo (centrado detrás del texto). Su propio logo solo se
+   ve con «reducir movimiento», cuando el que vuela se queda quieto. */
+.portada-logo {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: min(92vw, 980px);
+  aspect-ratio: 1862 / 623;
+  transform: translate(-50%, -58%);
+  color: var(--text);
+  visibility: hidden;
+  pointer-events: none;
+}
+.portada-logo svg { display: block; width: 100%; height: 100%; }
+.logo-vuelo {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 0;
+  width: 980px;
+  aspect-ratio: 1862 / 623;
+  color: var(--text);
+  transform-origin: 0 0;
+  pointer-events: none;
+  will-change: transform, opacity, filter;
+}
+.logo-vuelo.encima { z-index: 45; }
+.logo-vuelo.aterrizado, .logo-vuelo.quieto { visibility: hidden; }
+.portada:has(.logo-vuelo.quieto) .portada-logo { visibility: visible; opacity: 0.2; filter: blur(5px); }
+[data-theme="light"] .logo-vuelo, [data-theme="light"] .portada-logo { color: #04335d; }
+/* Mientras el logo vuela, el de la cabecera no se ve (aparece justo al aterrizar). */
+body:has(.logo-vuelo:not(.aterrizado):not(.quieto)) .marca-logo { opacity: 0; }
+
+.portada-deslizar {
+  position: absolute;
+  left: 50%;
+  bottom: 26px;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  text-decoration: none !important;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+.portada-deslizar:hover { color: var(--text); }
+.portada-deslizar-flecha {
+  width: 22px;
+  height: 34px;
+  border: 2px solid currentColor;
+  border-radius: 12px;
+  position: relative;
+}
+.portada-deslizar-flecha::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 7px;
+  width: 4px;
+  height: 7px;
+  margin-left: -2px;
+  border-radius: 2px;
+  background: var(--coral);
+  animation: portada-rueda 1.6s ease-in-out infinite;
+}
+@keyframes portada-rueda {
+  0% { opacity: 0; transform: translateY(-3px); }
+  25% { opacity: 1; }
+  70% { opacity: 1; transform: translateY(9px); }
+  100% { opacity: 0; transform: translateY(12px); }
+}
+@media (max-width: 640px) {
+  .portada { margin-top: -24px; min-height: calc(100svh - 60px - 88px - env(safe-area-inset-bottom, 0px)); padding-bottom: 88px; }
+  .portada-logo { width: 96vw; }
+  .portada-deslizar { bottom: 18px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .portada-deslizar-flecha::after { animation: none; opacity: 1; }
+}
 
 /* ---------- Recorrido por los módulos (js/recorrido.js) ----------
    La sección mide varias pantallas; su interior se queda fijo mientras las escenas avanzan

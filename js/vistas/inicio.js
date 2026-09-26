@@ -7,6 +7,7 @@ import * as sesion from '../sesion.js';
 import { resumen } from '../estadisticas.js';
 import { emblemaCurso, esc, estiloCurso, etiquetaModulo, icono, nota, plural, titulo } from '../utiles.js';
 import { montarRecorrido } from '../recorrido.js';
+import { montarBienvenida } from '../bienvenida.js';
 
 // Textos del recorrido si falta algún módulo en los datos.
 const MODULOS_BASE = ['Natación', 'Prevención de accidentes en instalaciones acuáticas', 'Rescate de accidentados en instalaciones acuáticas', 'Primeros auxilios'];
@@ -31,15 +32,19 @@ export async function render(el) {
 
   el.innerHTML = `
     <section class="portada">
-      <p class="portada-lugar">${icono('salvavidas')} ${esc(ESCUELA.ciudad)}</p>
-      <h1 class="portada-titulo">${esc(ESCUELA.nombre)}</h1>
-      <p class="portada-lema">${esc(ESCUELA.lema)}</p>
-      <div class="portada-botones">
-        ${u
-          ? '<a class="btn btn-claro btn-bloque" href="#recorrido" data-desplazar="recorrido">Ir a mis módulos</a>'
-          : '<a class="btn btn-claro btn-bloque" href="#/acceso">Acceso alumnos</a>'}
-        <a class="btn-portada" href="#cursos" data-desplazar="cursos">${icono('libro')} Ver módulos</a>
+      <div class="portada-logo" aria-hidden="true">
+        <svg viewBox="0 0 1862 623"><use href="assets/logo.svg#logo"/></svg>
       </div>
+      <svg class="logo-vuelo" viewBox="0 0 1862 623" aria-hidden="true"><use href="assets/logo.svg#logo"/></svg>
+      <div class="portada-texto">
+        <p class="portada-lugar">${icono('salvavidas')} ${esc(ESCUELA.ciudad)}</p>
+        <h1 class="portada-titulo">${u ? `Hola, ${esc(u.nombre.split(' ')[0])}` : 'Bienvenido'}</h1>
+        <p class="portada-lema">${esc(ESCUELA.lema)}</p>
+      </div>
+      <a class="portada-deslizar" href="#recorrido" data-desplazar="recorrido">
+        <span>${u ? 'Desliza para ver tus módulos' : 'Desliza para empezar'}</span>
+        <span class="portada-deslizar-flecha" aria-hidden="true"></span>
+      </a>
     </section>
 
     <section class="recorrido" id="recorrido" aria-label="Los cuatro módulos del curso">
@@ -106,9 +111,10 @@ export async function render(el) {
       </div>
     </section>`;
 
+  montarBienvenida(el.querySelector('.portada'));
   montarRecorrido(el.querySelector('.recorrido'));
 
-  // «Ver módulos» e «Ir a mis módulos» bajan sin cambiar la dirección.
+  // «Desliza para empezar» baja al recorrido sin cambiar la dirección.
   el.querySelectorAll('[data-desplazar]').forEach((boton) => boton.addEventListener('click', (e) => {
     e.preventDefault();
     document.getElementById(e.currentTarget.dataset.desplazar).scrollIntoView({ behavior: 'smooth' });

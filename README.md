@@ -41,6 +41,7 @@ js/tema-previo.js       aplica el tema guardado antes de pintar (script normal, 
 js/intro-previo.js      decide antes de pintar si toca la intro (una vez por visita)
 js/intro.js, css/intro.css  intro del logo a pantalla completa (fotogramas en <canvas>)
 assets/intro/           fotogramas de la intro e imagen fija del final
+js/bienvenida.js        bienvenida de la portada: el logo de fondo que vuela a la cabecera al bajar
 js/recorrido.js         recorrido por los 4 módulos en la portada (escenas que avanzan con el scroll)
 assets/recorrido/       fotogramas del recorrido
 fuentes/                vídeos originales de la intro y del recorrido (no se publican)
@@ -92,6 +93,14 @@ energía) y unas imágenes no, así que la animación se ve siempre entera y exa
 **Cambiar la animación:** poner el vídeo nuevo en `fuentes/` (no se publica: `.vercelignore`)
 y ejecutar `scripts/intro-fotogramas.sh fuentes/nuevo.mp4 v2`; después cambiar `RUTA` en
 `js/intro.js` a `v2` (y `TOTAL`/`FPS` si el vídeo no tiene 121 fotogramas a 24 por segundo).
+
+## Bienvenida (portada)
+
+Lo primero que se ve (tras la intro) es «Bienvenido» (o «Hola, nombre» con sesión) sobre el
+logo grande, difuminado y tenue de fondo, y un aviso animado para deslizar. Al bajar, el
+logo se enfoca, se encoge y vuela hasta su sitio en la cabecera, donde se queda. Es un `<svg>`
+fijo que se mueve con `transform` entre el hueco de la portada y el logo de la cabecera (que
+mientras tanto no se ve). Con «reducir movimiento» el logo se queda quieto de fondo.
 
 ## Recorrido por los módulos (portada)
 
