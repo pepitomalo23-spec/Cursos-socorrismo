@@ -68,7 +68,11 @@ terminar se funde con la web. Sale una vez por visita (para volver a verla: `/?i
 - En pantallas horizontales el vídeo llena la pantalla (el logo final queda en el centro).
   En verticales o casi cuadradas se muestra entero y el resto se rellena con el color del
   fondo del vídeo (`#f6f5f4`), para no recortar el logo.
-- Se elige 1080p o 720p según la pantalla y la conexión; WebM (VP9) y, si no, MP4 (H.264).
+- El vídeo se descarga entero antes de reproducirse (pesa 0,2–0,9 MB), para que se vea
+  siempre completo y fluido aunque la cobertura sea mala; si tarda, se ve una barra de
+  progreso. 1080p solo en pantallas grandes con buena conexión (en el móvil, 720p); WebM
+  (VP9) si el navegador lo asegura y, si no, MP4 (H.264), que funciona en todos.
+- Si la web se abre con la pestaña en segundo plano, el vídeo sigue al volver a ella.
 - Botón «Saltar» (y tecla Esc). Con «reducir movimiento» o ahorro de datos se enseña la
   imagen fija del logo en lugar del vídeo, igual que si el vídeo no pudiera reproducirse.
 - Para cambiar el vídeo: sustituir los archivos de `assets/intro/` (mismo nombre). Si el
