@@ -3,7 +3,7 @@
 import { ESCUELA } from '../config.js';
 import * as almacen from '../almacen.js';
 import * as sesion from '../sesion.js';
-import { esc, estiloCurso, etiquetaModulo, icono, titulo } from '../utiles.js';
+import { emblemaCurso, esc, estiloCurso, etiquetaModulo, icono, titulo } from '../utiles.js';
 
 export async function render(el) {
   titulo('');
@@ -48,7 +48,7 @@ export async function render(el) {
             const [color, ico] = estiloCurso(i);
             return `
               <article class="curso-fila color-${color}">
-                <span class="curso-emblema">${icono(ico)}</span>
+                <span class="curso-emblema">${emblemaCurso(c, ico)}</span>
                 <div class="curso-texto">
                   ${c.modulo ? `<span class="curso-etiqueta">${esc(etiquetaModulo(c))}</span>` : ''}
                   <h3>${esc(c.titulo)}</h3>

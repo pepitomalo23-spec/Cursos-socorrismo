@@ -178,3 +178,12 @@ export function etiquetaModulo(curso) {
 export function estiloCurso(indice) {
   return ESTILOS_CURSO[Math.max(0, indice) % ESTILOS_CURSO.length];
 }
+
+// Icono 3D de cada módulo (assets/modulos/). Los cursos sin módulo usan el icono de línea.
+const MODULOS_CON_IMAGEN = [1, 2, 3, 4];
+
+export function emblemaCurso(curso, iconoLinea) {
+  const n = Number(curso?.modulo);
+  if (!MODULOS_CON_IMAGEN.includes(n)) return icono(iconoLinea);
+  return `<img class="emblema-3d" src="assets/modulos/modulo-${n}.webp" alt="" width="192" height="192" decoding="async">`;
+}
