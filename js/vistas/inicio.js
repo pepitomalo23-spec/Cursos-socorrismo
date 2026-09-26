@@ -11,6 +11,8 @@ import { montarBienvenida } from '../bienvenida.js';
 
 // Textos del recorrido si falta algún módulo en los datos.
 const MODULOS_BASE = ['Natación', 'Prevención de accidentes en instalaciones acuáticas', 'Rescate de accidentados en instalaciones acuáticas', 'Primeros auxilios'];
+// Nombres cortos para los botones de ir directo a un módulo.
+const MODULOS_CORTOS = ['Natación', 'Prevención', 'Rescate', 'Primeros auxilios'];
 
 export async function render(el) {
   titulo('');
@@ -46,6 +48,20 @@ export async function render(el) {
         <span class="portada-deslizar-flecha" aria-hidden="true"></span>
       </a>
     </section>
+
+    <nav class="saltos-modulo" aria-label="Ir directo a un módulo">
+      <p class="saltos-titulo">¿Con prisa? Ve directo a un módulo</p>
+      <div class="saltos-lista">
+        ${recorrido.map((m, i) => {
+          const [color, ico] = estiloCurso(i);
+          return `
+            <a class="salto-modulo color-${color}" href="#recorrido" data-modulo="${i}">
+              <span class="salto-icono">${m.curso ? emblemaCurso(m.curso, ico) : icono(ico)}</span>
+              <span class="salto-texto"><span>Módulo ${i + 1}</span><strong>${MODULOS_CORTOS[i]}</strong></span>
+            </a>`;
+        }).join('')}
+      </div>
+    </nav>
 
     <section class="recorrido" id="recorrido" aria-label="Los cuatro módulos del curso">
       <div class="recorrido-fijo">
@@ -112,7 +128,11 @@ export async function render(el) {
     </section>`;
 
   montarBienvenida(el.querySelector('.portada'));
-  montarRecorrido(el.querySelector('.recorrido'));
+  const tour = montarRecorrido(el.querySelector('.recorrido'));
+  el.querySelectorAll('[data-modulo]').forEach((boton) => boton.addEventListener('click', (e) => {
+    e.preventDefault();
+    tour.irA(Number(e.currentTarget.dataset.modulo));
+  }));
 
   // «Desliza para empezar» baja al recorrido sin cambiar la dirección.
   el.querySelectorAll('[data-desplazar]').forEach((boton) => boton.addEventListener('click', (e) => {

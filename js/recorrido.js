@@ -48,6 +48,8 @@ export function montarRecorrido(raiz) {
   let mostrado = null; // posición (en escenas) que se está enseñando; persigue al scroll
   let ultimoCuadro = 0;
   let animando = false;
+  let pintado = null; // posición que hay dibujada en el lienzo
+  let sucio = true; // hay que volver a dibujar aunque la posición sea la misma (llegó una imagen…)
 
   const archivo = (e, f) => `${RUTA}/${ancho}/${e + 1}-${String(f + 1).padStart(3, '0')}.${formato}`;
   const fijoReducido = (e) => Math.round(FIJO_REDUCIDO * (FOTOGRAMAS[e] - 1));
@@ -95,7 +97,7 @@ export function montarRecorrido(raiz) {
       if (!siguiente || !raiz.isConnected) return;
       const [e, f] = siguiente;
       cargar(e, f)
-        .then((img) => { imagenes[e][f] = img; pedirPintar(); })
+        .then((img) => { imagenes[e][f] = img; sucio = true; pedirPintar(); })
         .catch(() => {})
         .finally(pedir);
     };
@@ -103,7 +105,7 @@ export function montarRecorrido(raiz) {
     const [e0, f0] = cola.shift();
     cargar(e0, f0)
       .catch(() => { formato = 'webp'; return cargar(e0, f0); })
-      .then((img) => { imagenes[e0][f0] = img; pedirPintar(); })
+      .then((img) => { imagenes[e0][f0] = img; sucio = true; pedirPintar(); })
       .catch(() => {})
       .finally(() => { for (let n = 0; n < EN_PARALELO; n++) pedir(); });
   }
@@ -127,11 +129,18 @@ export function montarRecorrido(raiz) {
     return Math.min(1, Math.max(0, (arriba - caja.top) / recorrido)) * ESCENAS;
   }
 
+  // Resolución del lienzo: la de la pantalla, pero nunca más que la de los fotogramas (dibujar
+  // más píxeles de los que tiene la imagen no la hace más nítida y cuesta mucho más).
   function medir() {
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    const w = Math.round(lienzo.clientWidth * dpr);
-    const h = Math.round(lienzo.clientHeight * dpr);
-    if (lienzo.width !== w || lienzo.height !== h) { lienzo.width = w; lienzo.height = h; }
+    // Píxeles de fotograma por píxel de pantalla con el encuadre «cubrir» (16:9).
+    const cw = Math.max(1, lienzo.clientWidth);
+    const ch = Math.max(1, lienzo.clientHeight);
+    const densidad = 1 / Math.max(cw / ancho, ch / (ancho * 9 / 16));
+    const escala = Math.max(1, Math.min(dpr, densidad));
+    const w = Math.round(lienzo.clientWidth * escala);
+    const h = Math.round(lienzo.clientHeight * escala);
+    if (lienzo.width !== w || lienzo.height !== h) { lienzo.width = w; lienzo.height = h; sucio = true; }
   }
 
   // Dibuja la imagen cubriendo el lienzo, con el socorrista (enfoque) lo más centrado posible.
@@ -192,7 +201,13 @@ export function montarRecorrido(raiz) {
     if (mostrado === null || reducido) mostrado = meta;
     else mostrado += (meta - mostrado) * (1 - Math.exp(-dt / SUAVIZADO));
     if (Math.abs(meta - mostrado) < 0.0005) mostrado = meta;
-    pintar(mostrado);
+    // Solo se dibuja si la sección está a la vista y algo ha cambiado.
+    const caja = raiz.getBoundingClientRect();
+    if (caja.bottom > 0 && caja.top < innerHeight && (sucio || mostrado !== pintado)) {
+      pintar(mostrado);
+      pintado = mostrado;
+      sucio = false;
+    }
     if (mostrado !== meta) requestAnimationFrame(cuadro);
     else animando = false;
   }
@@ -212,7 +227,17 @@ export function montarRecorrido(raiz) {
     const abajo = nav && getComputedStyle(nav).position === 'fixed' ? nav.offsetHeight : 0;
     raiz.style.setProperty('--recorrido-arriba', `${arriba}px`);
     raiz.style.setProperty('--recorrido-alto', `${innerHeight - arriba - abajo}px`);
+    sucio = true;
     pedirPintar();
+  }
+
+  // Lleva al módulo n (0-3): baja hasta la mitad de su escena, con el texto y sus recuadros.
+  function irA(n) {
+    const caja = raiz.getBoundingClientRect();
+    const arriba = parseFloat(getComputedStyle(fijo).top) || 0;
+    const recorrido = caja.height - fijo.offsetHeight;
+    const y = caja.top + scrollY - arriba + recorrido * ((n + 0.45 * (1 - FUNDIDO)) / ESCENAS);
+    scrollTo({ top: Math.round(y), behavior: reducido ? 'auto' : 'smooth' });
   }
 
   const observador = new IntersectionObserver((entradas) => {
@@ -229,4 +254,5 @@ export function montarRecorrido(raiz) {
   addEventListener('scroll', pedirPintar, { passive: true });
   addEventListener('resize', ajustarHueco);
   ajustarHueco();
+  return { irA };
 }

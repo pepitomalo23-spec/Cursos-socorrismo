@@ -1,17 +1,20 @@
 // Bienvenida de la portada: el logo grande y difuminado de fondo, detrás del «Bienvenido».
-// Al hacer scroll se enfoca, se encoge y vuela hasta su sitio en la esquina de la cabecera,
-// donde se queda como el logo de siempre.
+// Al hacer scroll, el logo vuela hasta su sitio en la esquina de la cabecera, y la cabecera
+// (menú, perfil o tema) aparece a la vez que aterriza.
 //
-// El logo que vuela es un <svg> fijo (.logo-vuelo) que se mueve con transform. Su punto de
-// partida es el hueco reservado en la portada (.portada-logo), que sube con la página; su
-// destino, el logo de la cabecera (.marca-logo), que mientras tanto no se ve (css: :has). Al
-// aterrizar se esconde el que vuela y vuelve el de la cabecera, así que no hay salto.
-// El recorrido del vuelo ocupa VUELO de la altura de la portada.
+// Para que vaya fluido solo se animan transform y opacity (los hace la tarjeta gráfica):
+// - .portada-logo: el logo difuminado de fondo. Se difumina una vez (css) y se va apagando.
+// - .logo-vuelo: el mismo logo, nítido, en un <svg> fijo que se enciende a la vez y vuela
+//   desde el hueco de la portada hasta el logo de la cabecera (.marca-logo), que mientras
+//   tanto no se ve (css: :has). Al aterrizar se esconde y vuelve el de la cabecera, así que no
+//   hay salto.
+// - La cabecera: su borde, el menú y el botón de perfil o tema siguen --aparece (0-1).
+// El vuelo ocupa VUELO de la altura de la portada.
 // Con «reducir movimiento» no vuela: el logo se queda de fondo y la cabecera, como siempre.
 
 const VUELO = 0.75; // parte de la altura de la portada en la que el logo llega a la esquina
-const DIFUMINADO = 7; // px de desenfoque al principio
-const OPACIDAD_INICIAL = 0.2;
+const CAMBIO = 0.3; // parte del vuelo en la que el difuminado da paso al nítido
+const APARECE_DESDE = 0.55; // desde qué parte del vuelo empieza a verse la cabecera
 
 export function montarBienvenida(portada) {
   const hueco = portada.querySelector('.portada-logo');
@@ -19,39 +22,42 @@ export function montarBienvenida(portada) {
   const aviso = portada.querySelector('.portada-deslizar');
   if (!hueco || !logo) return;
 
-
   if (matchMedia('(prefers-reduced-motion: reduce)').matches) logo.classList.add('quieto');
   const quieto = logo.classList.contains('quieto');
 
   // Ancho del logo sin escalar (el del css); los <svg> no tienen offsetWidth.
   const anchoBase = parseFloat(getComputedStyle(logo).width) || 980;
   let pedido = false;
+  let ultimoP = -1;
   const suavizar = (t) => 1 - (1 - t) ** 3;
 
   function colocar() {
     pedido = false;
     if (!portada.isConnected) { desmontar(); return; }
     if (quieto) return;
-    const marca = document.querySelector('.marca-logo');
-    const inicio = hueco.getBoundingClientRect();
-    const fin = marca?.getBoundingClientRect();
     const recorrido = portada.offsetHeight * VUELO;
     const p = Math.min(1, Math.max(0, scrollY / recorrido));
-    const k = suavizar(p);
+    if (p === ultimoP && p >= 1) return; // aterrizado y quieto: nada que hacer
+    ultimoP = p;
 
-    // Aterrizado (o sin cabecera a la que ir): se ve el logo de la cabecera.
+    const cabecera = document.querySelector('.cabecera');
+    const marca = document.querySelector('.marca-logo');
+    const fin = marca?.getBoundingClientRect();
     const aterrizado = p >= 1 || !fin || !fin.width;
     logo.classList.toggle('aterrizado', aterrizado);
+    cabecera?.style.setProperty('--aparece', Math.min(1, Math.max(0, (p - APARECE_DESDE) / (1 - APARECE_DESDE))).toFixed(3));
     if (aviso) aviso.style.opacity = String(Math.max(0, 1 - p * 3));
+    hueco.style.opacity = String(Math.max(0, 1 - p / CAMBIO));
     if (aterrizado) return;
 
+    const inicio = hueco.getBoundingClientRect();
+    const k = suavizar(p);
     const x = inicio.left + (fin.left - inicio.left) * k;
     const y = inicio.top + (fin.top - inicio.top) * k;
     const escala = (inicio.width + (fin.width - inicio.width) * k) / anchoBase;
-    logo.style.transform = `translate(${x}px, ${y}px) scale(${escala})`;
-    logo.style.opacity = String(OPACIDAD_INICIAL + (1 - OPACIDAD_INICIAL) * Math.min(1, p * 1.6));
-    logo.style.filter = p < 0.6 ? `blur(${(DIFUMINADO * (1 - p / 0.6)).toFixed(2)}px)` : 'none';
-    // Detrás del texto mientras es fondo; por encima de la cabecera al llegar a la esquina.
+    logo.style.transform = `translate3d(${x}px, ${y}px, 0) scale(${escala})`;
+    logo.style.opacity = String(Math.min(1, p / CAMBIO));
+    // Detrás del texto mientras es fondo; por encima de la cabecera al acercarse a la esquina.
     logo.classList.toggle('encima', p > 0.35);
   }
 
@@ -72,6 +78,7 @@ export function montarBienvenida(portada) {
 
   function alCambiarTamano() {
     ajustarAlto();
+    ultimoP = -1;
     pedir();
   }
 

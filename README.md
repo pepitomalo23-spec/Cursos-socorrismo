@@ -97,10 +97,15 @@ y ejecutar `scripts/intro-fotogramas.sh fuentes/nuevo.mp4 v2`; después cambiar 
 ## Bienvenida (portada)
 
 Lo primero que se ve (tras la intro) es «Bienvenido» (o «Hola, nombre» con sesión) sobre el
-logo grande, difuminado y tenue de fondo, y un aviso animado para deslizar. Al bajar, el
-logo se enfoca, se encoge y vuela hasta su sitio en la cabecera, donde se queda. Es un `<svg>`
-fijo que se mueve con `transform` entre el hueco de la portada y el logo de la cabecera (que
-mientras tanto no se ve). Con «reducir movimiento» el logo se queda quieto de fondo.
+logo grande, difuminado y tenue de fondo, y un aviso animado para deslizar; la cabecera aún
+no enseña el menú ni el botón de perfil o tema. Al bajar, el logo vuela hasta su sitio en la
+cabecera y la cabecera aparece a la vez que aterriza. Para que vaya fluido solo se animan
+`transform` y `opacity`: el logo de fondo se difumina una vez y se apaga, mientras uno nítido
+(un `<svg>` fijo) se enciende y vuela. Con «reducir movimiento» el logo se queda quieto de
+fondo y la cabecera se ve desde el principio.
+
+Justo antes del recorrido hay cuatro botones («¿Con prisa? Ve directo a un módulo») que
+bajan directamente a cada módulo del recorrido.
 
 ## Recorrido por los módulos (portada)
 
@@ -116,7 +121,8 @@ alumno no está matriculado en ese módulo.
   de la rueda y, al acabar, se funde con la siguiente. Para que se vea fluido: 20 fotogramas
   por segundo de vídeo; cuando el scroll cae entre dos fotogramas se dibuja la mezcla de
   ambos (sin saltos aunque se baje muy despacio), y el vídeo sigue al scroll con una inercia
-  muy corta para que un golpe de rueda no sea un salto brusco.
+  muy corta para que un golpe de rueda no sea un salto brusco. El lienzo solo se dibuja si
+  está a la vista y algo ha cambiado, y nunca a más resolución que la de los fotogramas.
 - Misma técnica que la intro: fotogramas en `<canvas>`. 350 fotogramas en
   `assets/recorrido/v3/`, AVIF (WebP de respaldo), a 960 px (móviles, ~6,7 MB en total) y
   1440 px (pantallas grandes, ~12 MB). No se descarga nada hasta acercarse a la sección, y

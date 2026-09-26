@@ -505,8 +505,7 @@ section.vacio p { margin-bottom: 22px; }
 }
 .portada-lema { max-width: 36ch; margin: 0; color: var(--muted); font-size: 16px; line-height: 1.55; }
 
-/* Hueco que marca dónde empieza el logo (centrado detrás del texto). Su propio logo solo se
-   ve con «reducir movimiento», cuando el que vuela se queda quieto. */
+/* El logo de fondo (difuminado una sola vez, sin animar el desenfoque) y el que vuela. */
 .portada-logo {
   position: absolute;
   top: 50%;
@@ -515,10 +514,10 @@ section.vacio p { margin-bottom: 22px; }
   aspect-ratio: 1862 / 623;
   transform: translate(-50%, -58%);
   color: var(--text);
-  visibility: hidden;
   pointer-events: none;
+  will-change: opacity;
 }
-.portada-logo svg { display: block; width: 100%; height: 100%; }
+.portada-logo svg { display: block; width: 100%; height: 100%; opacity: 0.22; filter: blur(7px); }
 .logo-vuelo {
   position: fixed;
   top: 0;
@@ -527,16 +526,27 @@ section.vacio p { margin-bottom: 22px; }
   width: 980px;
   aspect-ratio: 1862 / 623;
   color: var(--text);
+  opacity: 0;
   transform-origin: 0 0;
   pointer-events: none;
-  will-change: transform, opacity, filter;
+  will-change: transform, opacity;
 }
 .logo-vuelo.encima { z-index: 45; }
 .logo-vuelo.aterrizado, .logo-vuelo.quieto { visibility: hidden; }
-.portada:has(.logo-vuelo.quieto) .portada-logo { visibility: visible; opacity: 0.2; filter: blur(5px); }
 [data-theme="light"] .logo-vuelo, [data-theme="light"] .portada-logo { color: #04335d; }
-/* Mientras el logo vuela, el de la cabecera no se ve (aparece justo al aterrizar). */
+
+/* Mientras el logo vuela, el de la cabecera no se ve y la cabecera (su borde, el menú y el
+   botón de perfil o tema) va apareciendo con --aparece; del todo al aterrizar. Su fondo es
+   el mismo que el de la portada, así que se deja opaco (tapa lo que pasa por debajo). En el móvil
+   el menú es la barra de abajo y se queda como está. */
 body:has(.logo-vuelo:not(.aterrizado):not(.quieto)) .marca-logo { opacity: 0; }
+body:has(.logo-vuelo:not(.aterrizado):not(.quieto)) .cabecera {
+  border-bottom-color: color-mix(in srgb, var(--line) calc(var(--aparece, 0) * 100%), transparent);
+}
+body:has(.logo-vuelo:not(.aterrizado):not(.quieto)) :is(.usuario, .tema-suelto) { opacity: var(--aparece, 0); pointer-events: none; }
+@media (min-width: 641px) {
+  body:has(.logo-vuelo:not(.aterrizado):not(.quieto)) .cabecera .nav { opacity: var(--aparece, 0); pointer-events: none; }
+}
 
 .portada-deslizar {
   position: absolute;
@@ -590,6 +600,39 @@ body:has(.logo-vuelo:not(.aterrizado):not(.quieto)) .marca-logo { opacity: 0; }
 }
 @media (prefers-reduced-motion: reduce) {
   .portada-deslizar-flecha::after { animation: none; opacity: 1; }
+}
+
+/* Botones para ir directo a un módulo, justo antes del recorrido (misma estética que los
+   recuadros de Temario y Test). */
+.saltos-modulo { max-width: 1080px; margin: 0 auto; padding: 8px 24px 28px; }
+.saltos-titulo { margin: 0 0 12px; color: var(--muted); font-family: var(--mono); font-size: 11.5px; font-weight: 600; letter-spacing: 0.12em; text-align: center; text-transform: uppercase; }
+.saltos-lista { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.salto-modulo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  padding: 12px 14px 12px 12px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--card);
+  color: var(--text);
+  text-decoration: none !important;
+  transition: border-color 0.15s, background 0.15s, transform 0.15s;
+}
+.salto-modulo:hover { border-color: var(--c); background: var(--card-hi); transform: translateY(-1px); }
+.salto-icono { display: grid; place-items: center; flex-shrink: 0; width: 38px; height: 38px; color: var(--c); }
+.salto-icono .glifo-modulo { width: 38px; height: 38px; }
+.salto-icono .icono { width: 26px; height: 26px; }
+.salto-texto { display: flex; flex-direction: column; min-width: 0; }
+.salto-texto span { color: var(--c); font-family: var(--mono); font-size: 10.5px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; }
+.salto-texto strong { overflow: hidden; font-family: var(--title); font-size: 16px; font-weight: 400; letter-spacing: 0.3px; line-height: 1.2; text-overflow: ellipsis; text-transform: uppercase; white-space: nowrap; }
+@media (max-width: 640px) {
+  .saltos-modulo { padding: 4px 16px 22px; }
+  .saltos-lista { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .salto-modulo { gap: 10px; padding: 10px 12px 10px 10px; }
+  .salto-icono, .salto-icono .glifo-modulo { width: 32px; height: 32px; }
+  .salto-texto strong { font-size: 14.5px; }
 }
 
 /* ---------- Recorrido por los módulos (js/recorrido.js) ----------
