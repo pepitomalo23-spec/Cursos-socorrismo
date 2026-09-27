@@ -4,7 +4,7 @@
 // se usará Supabase Auth y aquí solo cambiarán entrar(), registrar() y salir().
 
 import * as almacen from './almacen.js';
-import { nuevoId } from './utiles.js';
+import { nombreCiudad, nuevoId } from './utiles.js';
 
 const CLAVE = 'escuela.sesion.v1';
 
@@ -49,9 +49,10 @@ export async function entrar(email, _clave) {
 }
 
 // Alta de un alumno nuevo. Entra sin cursos: la escuela le da acceso desde Administración.
-export async function registrar(nombre, email, _clave) {
+export async function registrar(nombre, email, _clave, ciudad = '') {
   const limpio = email.trim().toLowerCase();
   if (!nombre.trim()) throw new Error('Escribe tu nombre.');
+  if (!ciudad.trim()) throw new Error('Escribe tu ciudad (sale en el ranking de tu ciudad).');
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(limpio)) throw new Error('El correo electrónico no es válido.');
   if (await almacen.usuarioPorEmail(limpio)) throw new Error('Ya hay una cuenta con ese correo. Inicia sesión.');
   const u = await almacen.guardarUsuario({
@@ -60,6 +61,7 @@ export async function registrar(nombre, email, _clave) {
     email: limpio,
     rol: 'alumno',
     cursos: [],
+    ciudad: nombreCiudad(ciudad),
   });
   escribir(u);
   return u;

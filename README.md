@@ -21,6 +21,10 @@ tema van en un botón ☰ en la esquina de la cabecera, que abre un panel.
   y enseña la explicación) y penalización opcional de los fallos (−1/3).
 - Corrección pregunta a pregunta, con filtro de fallos y un botón para repasar solo los fallos.
 - Notas: media, mejor nota, porcentaje de aciertos por tema e historial.
+- Ranking de su ciudad (en «Mis notas»): los alumnos de su ciudad con algún test, ordenados
+  por nota media; él resaltado y su puesto («Vas 3.º de 5»). De los demás se ve el nombre y
+  la inicial del apellido. La ciudad se pide al crear la cuenta (y la puede cambiar la
+  escuela); quien no la tenga, la añade ahí mismo.
 
 El curso de socorrista está dividido en cuatro módulos (cada uno es un «curso» con su número
 de módulo): 1 Natación, 2 Prevención de accidentes en instalaciones acuáticas, 3 Rescate de
@@ -30,7 +34,7 @@ accidentados en instalaciones acuáticas y 4 Primeros auxilios.
 - Cursos y módulos: crear, editar (incluido el número de módulo) y borrar.
 - Temas: ordenar, editar el contenido (con vista previa) y el material.
 - Preguntas: crear, editar y borrar (de 2 a 6 opciones, con explicación).
-- Alumnos: alta, a qué cursos tienen acceso, baja y ficha con sus notas.
+- Alumnos: alta, ciudad, a qué cursos tienen acceso, baja y ficha con sus notas.
 - Notas de todos los alumnos, con filtro por curso y por alumno.
 
 ## Estructura

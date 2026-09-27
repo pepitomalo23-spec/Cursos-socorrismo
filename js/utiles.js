@@ -159,6 +159,15 @@ export function icono(nombre, clase = '') {
   return `<svg class="icono ${clase}" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICONOS[nombre] ?? ''}</svg>`;
 }
 
+// Nombre de ciudad bien escrito: «  córdoba » → «Córdoba», «alcalá de henares» → «Alcalá de
+// Henares» (las palabras cortas como «de» o «la» van en minúscula salvo al principio).
+const MINUSCULAS = new Set(['de', 'del', 'la', 'las', 'los', 'el', 'y', 'e', 'en']);
+export function nombreCiudad(texto) {
+  return (texto ?? '').trim().replace(/\s+/g, ' ').toLowerCase().split(' ')
+    .map((p, i) => (i > 0 && MINUSCULAS.has(p) ? p : p.charAt(0).toUpperCase() + p.slice(1)))
+    .join(' ');
+}
+
 // Título de la pestaña del navegador.
 export function titulo(texto) {
   document.title = texto ? `${texto} · ${ESCUELA.nombre}` : ESCUELA.nombre;

@@ -3,7 +3,7 @@
 import * as almacen from '../../almacen.js';
 import * as sesion from '../../sesion.js';
 import { resumen as resumenNotas } from '../../estadisticas.js';
-import { aviso, esc, etiquetaModulo, icono, nota, nuevoId, pantallaVacia, titulo } from '../../utiles.js';
+import { aviso, esc, etiquetaModulo, nombreCiudad, icono, nota, nuevoId, pantallaVacia, titulo } from '../../utiles.js';
 import { informe } from '../notas.js';
 import { dialogo } from './comun.js';
 
@@ -43,7 +43,7 @@ export async function lista(el) {
                   <td class="celda-principal">
                     <a href="#/admin/alumno/${esc(u.id)}"><strong>${esc(u.nombre)}</strong></a>
                     ${u.rol === 'admin' ? '<span class="etiqueta">Administración</span>' : ''}
-                    <br><span class="apagado pequeno">${esc(u.email)}</span>
+                    <br><span class="apagado pequeno">${esc(u.email)}${u.ciudad ? ` · ${esc(u.ciudad)}` : ''}</span>
                   </td>
                   <td data-etiqueta="Cursos"><span>${u.rol === 'admin' ? '<span class="apagado">Todos</span>' : u.cursos.map((c) => nombreCorto(c)).join('<br>') || '<span class="apagado">Ninguno</span>'}</span></td>
                   <td data-etiqueta="Tests">${r.tests}</td>
@@ -75,6 +75,7 @@ function editarUsuario(u, cursos, alTerminar) {
     cuerpo: `
       <label>Nombre y apellidos <input name="nombre" value="${esc(u?.nombre ?? '')}" required autocomplete="off"></label>
       <label>Correo electrónico <input name="email" type="email" value="${esc(u?.email ?? '')}" required autocomplete="off"></label>
+      <label>Ciudad <input name="ciudad" value="${esc(u?.ciudad ?? '')}" autocomplete="off" placeholder="Para el ranking de su ciudad"></label>
       <fieldset>
         <legend>Cursos a los que tiene acceso</legend>
         ${cursos.map((c) => `
@@ -101,6 +102,7 @@ function editarUsuario(u, cursos, alTerminar) {
       email,
       rol: esYo || f.admin.checked ? 'admin' : 'alumno',
       cursos: [...f.querySelectorAll('[name=curso]:checked')].map((c) => c.value),
+      ciudad: nombreCiudad(f.ciudad.value),
     });
     if (esYo) await sesion.refrescar();
     aviso(nuevo ? `${nombre} ya tiene acceso.` : 'Cambios guardados.');

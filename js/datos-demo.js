@@ -342,10 +342,56 @@ const preguntas = [
     'El agua conduce la corriente y los parches no se pegan sobre la piel mojada.'),
 ];
 
+const TODOS = ['modulo-1', 'modulo-2', 'modulo-3', 'modulo-4'];
 const usuarios = [
-  { id: 'u-admin', nombre: 'Dirección', email: 'admin@demo.es', rol: 'admin', cursos: [] },
-  { id: 'u-laura', nombre: 'Laura García', email: 'alumno@demo.es', rol: 'alumno', cursos: ['modulo-1', 'modulo-2', 'modulo-3', 'modulo-4'] },
-  { id: 'u-marcos', nombre: 'Marcos Ruiz', email: 'marcos@demo.es', rol: 'alumno', cursos: ['modulo-1', 'modulo-2'] },
+  { id: 'u-admin', nombre: 'Dirección', email: 'admin@demo.es', rol: 'admin', cursos: [], ciudad: '' },
+  { id: 'u-laura', nombre: 'Laura García', email: 'alumno@demo.es', rol: 'alumno', cursos: TODOS, ciudad: 'Córdoba' },
+  { id: 'u-marcos', nombre: 'Marcos Ruiz', email: 'marcos@demo.es', rol: 'alumno', cursos: ['modulo-1', 'modulo-2'], ciudad: 'Córdoba' },
+  // Compañeros de ejemplo, para que el ranking de la ciudad tenga con quién comparar.
+  { id: 'u-lucia', nombre: 'Lucía Fernández', email: 'lucia@demo.es', rol: 'alumno', cursos: TODOS, ciudad: 'Córdoba' },
+  { id: 'u-javier', nombre: 'Javier Moreno', email: 'javier@demo.es', rol: 'alumno', cursos: TODOS, ciudad: 'Córdoba' },
+  { id: 'u-carmen', nombre: 'Carmen López', email: 'carmen@demo.es', rol: 'alumno', cursos: TODOS, ciudad: 'Córdoba' },
+  { id: 'u-ana', nombre: 'Ana Torres', email: 'ana@demo.es', rol: 'alumno', cursos: TODOS, ciudad: 'Sevilla' },
 ];
 
-export const DATOS_DEMO = { cursos, temas, preguntas, usuarios, intentos: [] };
+// Tests de ejemplo de los compañeros: en el tema indicado, acierta las primeras «bien»
+// preguntas y falla el resto.
+function intentoDemo(id, usuarioId, temaId, bien, fecha) {
+  const u = usuarios.find((x) => x.id === usuarioId);
+  const tema = temas.find((t) => t.id === temaId);
+  const curso = cursos.find((c) => c.id === tema.cursoId);
+  const lista = preguntas.filter((p) => p.temaId === temaId);
+  const total = lista.length;
+  const aciertos = Math.min(bien, total);
+  return {
+    id,
+    usuarioId,
+    usuarioNombre: u.nombre,
+    cursoId: curso.id,
+    cursoTitulo: curso.titulo,
+    temaIds: [temaId],
+    temaTitulos: [tema.titulo],
+    inicio: fecha,
+    fecha,
+    total,
+    aciertos,
+    fallos: total - aciertos,
+    blancos: 0,
+    nota: Math.round((aciertos / total) * 1000) / 100,
+    penaliza: false,
+    estudio: false,
+    preguntas: lista.map((p, i) => ({ ...p, elegida: i < aciertos ? p.correcta : (p.correcta + 1) % p.opciones.length })),
+  };
+}
+
+const intentos = [
+  intentoDemo('i-demo-1', 'u-lucia', 't0', 6, '2026-09-20T10:00:00.000Z'),
+  intentoDemo('i-demo-2', 'u-lucia', 't3', 5, '2026-09-22T18:30:00.000Z'),
+  intentoDemo('i-demo-3', 'u-javier', 't1', 4, '2026-09-21T09:15:00.000Z'),
+  intentoDemo('i-demo-4', 'u-javier', 't2', 3, '2026-09-23T17:40:00.000Z'),
+  intentoDemo('i-demo-5', 'u-carmen', 't4', 2, '2026-09-24T12:05:00.000Z'),
+  intentoDemo('i-demo-6', 'u-marcos', 't0', 4, '2026-09-19T16:20:00.000Z'),
+  intentoDemo('i-demo-7', 'u-ana', 't0', 6, '2026-09-22T11:00:00.000Z'),
+];
+
+export const DATOS_DEMO = { cursos, temas, preguntas, usuarios, intentos };

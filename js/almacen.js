@@ -18,11 +18,28 @@ function copia(valor) {
 function cargar() {
   try {
     const guardado = localStorage.getItem(CLAVE);
-    if (guardado) return JSON.parse(guardado);
+    if (guardado) return completarDemo(JSON.parse(guardado));
   } catch {
     // Sin acceso al almacenamiento (modo privado estricto): se trabaja en memoria.
   }
   return copia(DATOS_DEMO);
+}
+
+// Añade a unos datos ya guardados lo nuevo de la demostración sin tocar lo demás: la ciudad
+// de los alumnos de ejemplo, los compañeros de ejemplo y sus tests (para el ranking).
+function completarDemo(datos) {
+  for (const demo of DATOS_DEMO.usuarios) {
+    const u = datos.usuarios.find((x) => x.id === demo.id);
+    if (!u) datos.usuarios.push(copia(demo));
+    else if (u.ciudad === undefined) u.ciudad = demo.ciudad;
+  }
+  datos.intentos ??= [];
+  for (const demo of DATOS_DEMO.intentos) {
+    if (!datos.intentos.some((i) => i.id === demo.id) && datos.usuarios.some((u) => u.id === demo.usuarioId)) {
+      datos.intentos.push(copia(demo));
+    }
+  }
+  return datos;
 }
 
 function guardar() {

@@ -29,7 +29,9 @@ export function formularioAcceso(contenedor, { modo = 'entrar', volver = null, a
         <p class="acceso-sub">${registro
           ? 'Crea tu cuenta y la escuela te dará acceso a tus cursos.'
           : 'Inicia sesión para ver tu temario, hacer tests y consultar tus notas.'}</p>
-        ${registro ? '<input class="acceso-campo" name="nombre" placeholder="Nombre y apellidos" autocomplete="name" aria-label="Nombre y apellidos">' : ''}
+        ${registro ? `
+          <input class="acceso-campo" name="nombre" placeholder="Nombre y apellidos" autocomplete="name" aria-label="Nombre y apellidos">
+          <input class="acceso-campo" name="ciudad" placeholder="Ciudad" autocomplete="address-level2" aria-label="Ciudad">` : ''}
         <input class="acceso-campo" name="email" type="email" inputmode="email" placeholder="Correo electrónico" autocomplete="email" autocapitalize="off" spellcheck="false" aria-label="Correo electrónico">
         <input class="acceso-campo" name="clave" type="password" placeholder="Contraseña" autocomplete="${registro ? 'new-password' : 'current-password'}" aria-label="Contraseña">
         <p class="acceso-error" role="alert"></p>
@@ -64,7 +66,7 @@ export function formularioAcceso(contenedor, { modo = 'entrar', volver = null, a
       const email = form.email.value.trim();
       try {
         if (!email) throw new Error('Escribe tu correo electrónico.');
-        if (registro) await sesion.registrar(form.nombre.value, email, form.clave.value);
+        if (registro) await sesion.registrar(form.nombre.value, email, form.clave.value, form.ciudad.value);
         else await sesion.entrar(email, form.clave.value);
         const destino = volver && !volver.startsWith('/acceso') ? `#${volver}` : '#/';
         // Si ya se está ahí (el formulario de la portada), se vuelve a pintar igualmente.
