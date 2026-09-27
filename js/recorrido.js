@@ -5,30 +5,33 @@
 // - Al llegar a la sección, la página se coloca justo en el primer módulo (si se baja de
 //   golpe, se para ahí; si se deja casi entera a la vista, termina de colocarse sola) y se
 //   ve el principio de su escena.
-// - Cada gesto hacia abajo (rueda, trackpad, dedo o teclado) reproduce la escena entera, un
-//   pelín más rápida que el vídeo (VELOCIDAD), y termina en el principio de la siguiente, ya
-//   con su módulo. Mientras se reproduce no se mueve nada; para seguir hace falta otro gesto
-//   (la inercia del anterior no cuenta).
+// - Cada gesto hacia abajo (rueda, trackpad, dedo o teclado) reproduce la escena entera, más
+//   rápida que el vídeo (VELOCIDAD: 2 s), y termina en el principio de la siguiente, ya con
+//   su módulo. Mientras se reproduce no se mueve nada; para seguir hace falta otro gesto (la
+//   inercia del anterior no cuenta).
 // - En el cuarto, al acabar su escena, la página sigue con normalidad.
-// - Hacia arriba el scroll es libre: se vuelve de módulo en módulo (se ve el principio de
-//   cada uno) y, desde el primero, se sale por arriba.
-// La parte fija de la sección no se mueve con el scroll, así que la página puede quedarse en
-// cada módulo sin que se note: solo cambian la escena y el texto. Los gestos solo se
-// interceptan mientras se está dentro de la sección; fuera, el scroll es el del navegador.
+// - Hacia arriba, cada gesto vuelve un módulo (a su principio, sin vídeo) y desde el primero
+//   se sale por arriba.
+// Dentro de la sección la página no se mueve (ni da saltos de un módulo a otro): solo
+// cambian la escena y el texto. La sección mide poco más de una pantalla (clase por-pasos);
+// lo que sobra solo sirve para frenar la inercia al llegar sin que se note. Los gestos solo se
+// interceptan dentro; fuera, el scroll es el del navegador.
 //
 // Técnica: la misma que la intro (js/intro.js), fotogramas dibujados en un <canvas>; un
 // <video> no siempre arranca solo en el móvil y las imágenes sí.
 // - Cada escena son FOTOGRAMAS[e] imágenes, 20 por segundo de vídeo (AVIF, o WebP si el
-//   navegador no tiene AVIF). No se descarga nada hasta acercarse a la sección. Primero llega
-//   el principio de cada escena y luego el resto (uno de cada 8, 4, 2…), antes la del módulo
-//   en el que se está; si falta alguno se dibuja el más cercano que ya ha llegado.
+//   navegador no tiene AVIF); a esta velocidad basta uno de cada PASO. Se empiezan a
+//   descargar en cuanto se abre la portada (tras la intro): primero el principio de cada
+//   escena y luego cada escena entera, en orden y antes la del módulo en el que se está.
 // - El avance lo marca el reloj (dura siempre lo mismo aunque el móvil vaya justo) y entre
-//   dos fotogramas se dibuja la mezcla de ambos, así que se ve fluido. Al final, la escena se
-//   funde con el principio de la siguiente (el fondo es el mismo: parece un solo plano).
+//   dos fotogramas se dibuja la mezcla de ambos, así que se ve fluido. Nunca se salta un
+//   fotograma que no ha llegado: si falta, la escena espera en el último hasta que llega (sin
+//   saltos ni fogonazos). Al final se funde con el principio de la siguiente (el fondo es el
+//   mismo: parece un solo plano).
 // - Encuadre: en horizontal la imagen llena el hueco; en vertical ocupa la parte de arriba,
 //   centrada en el socorrista de cada escena (ENFOQUE), y el texto va debajo.
-// - Con «reducir movimiento» no hay vídeo ni se interceptan gestos: una imagen fija de cada
-//   escena, que cambia con el scroll.
+// - Con «reducir movimiento» no hay vídeo ni se interceptan gestos: la sección es larga y se
+//   ve una imagen fija de cada escena, que cambia con el scroll.
 //
 // Para cambiar las escenas: scripts/recorrido-fotogramas.sh (y subir la versión de RUTA).
 
@@ -36,13 +39,15 @@ const RUTA = 'assets/recorrido/v3'; // cambiar la versión al cambiar los fotogr
 const ESCENAS = 4;
 const FOTOGRAMAS = [100, 100, 50, 100]; // por escena (20 por segundo; la 3 dura 2,5 s)
 const FPS = 20;
-const VELOCIDAD = 1.25; // la escena va un pelín más rápida que el vídeo (5 s → 4 s)
+const VELOCIDAD = 2.5; // cuánto más rápida que el vídeo va la escena (5 s → 2 s)
+const PASO = 2; // fotogramas que se usan: uno de cada PASO (a esta velocidad sobran los demás)
 const ENFOQUE = [0.47, 0.47, 0.47, 0.5]; // x del socorrista (0-1) en cada escena
-const FUNDIDO = 450; // ms del fundido entre escenas
-const SOLAPE = 200; // ms antes del final de la escena en los que empieza a fundirse
+const FUNDIDO = 350; // ms del fundido entre escenas
+const SOLAPE = 150; // ms antes del final de la escena en los que empieza a fundirse
 const EN_PARALELO = 6;
 const FIJO_REDUCIDO = 0.55; // con «reducir movimiento», qué parte de cada escena se enseña
 const PAUSA_GESTO = 200; // ms sin rueda para que lo siguiente cuente como un gesto nuevo
+const REPOSO_RUEDA = 350; // ms parado en un módulo tras los que un golpe de rueda fuerte avanza
 const UMBRAL_DEDO = 10; // px que hay que subir el dedo para avanzar
 const RETENCION = 1500; // ms, como mucho, que se frena la inercia al llegar a la sección
 const QUIETO = 160; // ms sin scroll para darlo por acabado (si no hay evento scrollend)
@@ -56,9 +61,12 @@ export function montarRecorrido(raiz) {
   const pasos = [...raiz.querySelectorAll('.recorrido-paso')];
   const barras = [...raiz.querySelectorAll('.recorrido-progreso span')];
   const reducido = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  raiz.classList.toggle('por-pasos', !reducido);
 
   // imagenes[escena][fotograma]: la imagen ya decodificada, o undefined si aún no ha llegado.
   const imagenes = FOTOGRAMAS.map((n) => new Array(n));
+  // Los fotogramas que se usan de cada escena: uno de cada PASO, y el último.
+  const usados = FOTOGRAMAS.map((n) => [...new Set([...Array.from({ length: Math.ceil(n / PASO) }, (_, i) => i * PASO), n - 1])]);
   let formato = 'avif';
   let ancho = 960;
   let cola = null; // fotogramas pendientes de pedir, en orden: [escena, fotograma]
@@ -69,9 +77,10 @@ export function montarRecorrido(raiz) {
   let completados = 0; // barras de progreso llenas
   let vista = { e: 0, t: 0 }; // lo que se enseña en reposo: escena y momento (0-1)
   let fundido = null; // { desde, t0 }: cambio de vista en curso
-  let reproduccion = null; // { n, t0, dur }: escena que se está reproduciendo
+  let reproduccion = null; // { n, reloj, ultimo, dur }: escena que se está reproduciendo
   let retencion = null; // { hasta, ultimo }: al llegar de golpe, la página no pasa del módulo
   let pendiente = null; // módulo al que lleva irA mientras la página baja hasta la sección
+  let casa = 'inicio'; // dentro, dónde se queda la página: 'inicio' o 'fin' de la parte fija
   let libreHasta = 0; // hasta cuándo el scroll manda (barra de scroll, Inicio/Fin)
   let deslizando = false;
   let escuchando = false;
@@ -79,6 +88,8 @@ export function montarRecorrido(raiz) {
   let direccion = 0;
   let ultimaRueda = -Infinity;
   let signoRueda = 0;
+  let fuerzaRueda = 0; // tamaño del último golpe de rueda (la inercia va a menos)
+  let enReposoDesde = 0; // cuándo acabó la última escena (o se llegó)
   let gastado = false; // el gesto de rueda en curso ya ha hecho algo
   let dedo = null; // gesto táctil en curso: { y, decidido, usado }
   let tocando = false;
@@ -105,31 +116,32 @@ export function montarRecorrido(raiz) {
     });
   }
 
-  // Orden de carga: lo que antes hace falta para que no haya huecos.
+  // Orden de carga: el principio de cada escena (se ve al llegar a cada módulo) y luego cada
+  // escena entera y en orden, porque se reproduce de principio a fin.
   function ordenDeCarga() {
-    const orden = [];
-    const visto = new Set();
-    const anadir = (e, f) => {
-      const clave = `${e}-${f}`;
-      if (!visto.has(clave)) { visto.add(clave); orden.push([e, f]); }
-    };
-    for (let e = 0; e < ESCENAS; e++) anadir(e, reducido ? fijoReducido(e) : 0);
-    if (reducido) return orden;
-    for (const paso of [8, 4, 2, 1]) {
-      for (let e = 0; e < ESCENAS; e++) {
-        for (let f = 0; f < FOTOGRAMAS[e]; f += paso) anadir(e, f);
-        anadir(e, FOTOGRAMAS[e] - 1);
-      }
-    }
-    return orden;
+    if (reducido) return FOTOGRAMAS.map((_, e) => [e, fijoReducido(e)]);
+    return [
+      ...FOTOGRAMAS.map((_, e) => [e, 0]),
+      ...usados.flatMap((lista, e) => lista.filter((f) => f > 0).map((f) => [e, f])),
+    ];
   }
 
-  // Pasa delante en la cola lo que falta de esa escena (la que se va a ver ya), detrás solo
-  // del principio de cada escena (poco y hace falta para los fundidos).
+  // Pone delante en la cola lo que falta de esa escena y las siguientes (las que se van a ver
+  // ya), detrás solo del principio de cada escena.
   function adelantarEscena(e) {
     if (!cola || reducido || e < 0 || e >= ESCENAS) return;
-    const antes = cola.filter(([x, f]) => f === 0 || x === e);
-    cola = [...antes.filter(([, f]) => f === 0), ...antes.filter(([, f]) => f !== 0), ...cola.filter(([x, f]) => f !== 0 && x !== e)];
+    const turno = ([x, f]) => (f === 0 ? -1 : (x - e + ESCENAS) % ESCENAS);
+    cola = cola.map((c, i) => [c, i]).sort((a, b) => turno(a[0]) - turno(b[0]) || a[1] - b[1]).map(([c]) => c);
+  }
+
+  // Hasta qué momento (0-1) de la escena e han llegado todos los fotogramas, sin huecos.
+  function listo(e) {
+    let hasta = -1;
+    for (const f of usados[e]) {
+      if (!imagenes[e][f]) break;
+      hasta = f;
+    }
+    return hasta < 0 ? 0 : hasta / (FOTOGRAMAS[e] - 1);
   }
 
   function empezarCarga() {
@@ -197,14 +209,17 @@ export function montarRecorrido(raiz) {
     ctx.globalAlpha = 1;
   }
 
-  // Dibuja el momento t (0-1) de la escena e, mezclando los dos fotogramas entre los que cae.
+  // Dibuja el momento t (0-1) de la escena e, mezclando los dos fotogramas usados entre los
+  // que cae.
   function dibujarMomento(e, t, enfoque, alfa) {
     const n = FOTOGRAMAS[e];
-    const exacto = reducido ? fijoReducido(e) : t * (n - 1);
-    const f = Math.floor(exacto);
-    const resto = exacto - f;
+    if (reducido) { dibujar(masCercano(e, fijoReducido(e)), enfoque, alfa); return; }
+    const exacto = t * (n - 1);
+    const f = Math.min(n - 1, Math.floor(exacto / PASO) * PASO);
+    const g = Math.min(n - 1, f + PASO);
+    const resto = g > f ? (exacto - f) / (g - f) : 0;
     dibujar(masCercano(e, f), enfoque, alfa);
-    if (resto > 0.02 && imagenes[e][f + 1]) dibujar(imagenes[e][f + 1], enfoque, alfa * resto);
+    if (resto > 0.02 && imagenes[e][g]) dibujar(imagenes[e][g], enfoque, alfa * resto);
   }
 
   const progresoFundido = (ahora) => (fundido ? Math.min(1, (ahora - fundido.t0) / FUNDIDO) : 1);
@@ -212,8 +227,7 @@ export function montarRecorrido(raiz) {
   // Lo que toca enseñar ahora: una escena (a) en un momento y, fundiéndose encima, otra (b).
   function momento(ahora) {
     if (reproduccion) {
-      const { n, t0, dur } = reproduccion;
-      const pasado = ahora - t0;
+      const { n, reloj: pasado, dur } = reproduccion;
       const t = Math.min(1, pasado / dur);
       const ultima = n === ESCENAS - 1;
       const mezcla = ultima ? 0 : Math.min(1, Math.max(0, (pasado - dur + SOLAPE) / FUNDIDO));
@@ -254,6 +268,14 @@ export function montarRecorrido(raiz) {
 
   function cuadro(ahora) {
     if (!raiz.isConnected) { animando = false; desmontar(); return; }
+    // El reloj de la escena avanza con el tiempo, pero nunca más allá de lo que ha llegado.
+    if (reproduccion) {
+      const r = reproduccion;
+      const dt = Math.min(64, Math.max(0, ahora - r.ultimo));
+      r.ultimo = ahora;
+      const tope = r.reloj >= r.dur ? Infinity : listo(r.n) * r.dur;
+      r.reloj = Math.max(r.reloj, Math.min(r.reloj + dt, tope));
+    }
     const m = pintar(ahora);
     if (reproduccion && m.acabada) terminarReproduccion();
     if (reproduccion || fundido) requestAnimationFrame(cuadro);
@@ -283,45 +305,46 @@ export function montarRecorrido(raiz) {
     const n = modulo;
     fundido = null;
     vista = { e: n, t: 0 };
-    reproduccion = { n, t0: performance.now(), dur: (FOTOGRAMAS[n] / FPS) * 1000 / VELOCIDAD };
+    reproduccion = { n, reloj: 0, ultimo: performance.now(), dur: (FOTOGRAMAS[n] / FPS) * 1000 / VELOCIDAD };
     adelantarEscena(n);
     animar();
   }
 
-  // Al acabar, se queda en el principio del módulo siguiente; tras el último, se suelta.
+  // Al acabar, se queda en el principio del módulo siguiente (la página no se mueve); tras el
+  // último, se suelta.
   function terminarReproduccion() {
     const { n } = reproduccion;
     reproduccion = null;
+    enReposoDesde = performance.now();
     if (n < ESCENAS - 1) {
       modulo = n + 1;
       completados = modulo;
       vista = { e: modulo, t: 0 };
       adelantarEscena(modulo);
-      fijar(modulo);
     } else {
       completados = ESCENAS;
       vista = { e: n, t: 1 };
-      fijar(ESCENAS);
+      casa = 'fin';
+      fijar();
       salir('abajo');
     }
   }
 
   // ---------- Posición de la página ----------
 
-  // Medidas en px de scroll: dónde se queda fija la sección (módulo 0) y cuánto va de un
-  // módulo a otro. En ESCENAS se suelta.
-  function geometria() {
+  // En px de scroll: desde dónde se queda fija la sección (inicio) y hasta dónde (fin). Dentro,
+  // la página no se mueve de uno de los dos (casa): solo cambian la escena y el texto.
+  function limites() {
     const arriba = parseFloat(getComputedStyle(fijo).top) || 0;
-    const base = raiz.getBoundingClientRect().top + scrollY - arriba;
-    return { base, paso: Math.max(1, (raiz.offsetHeight - fijo.offsetHeight) / ESCENAS) };
+    const inicio = Math.round(raiz.getBoundingClientRect().top + scrollY - arriba);
+    return { inicio, fin: inicio + Math.max(0, Math.round(raiz.offsetHeight - fijo.offsetHeight)) };
   }
-  const posicionDe = (n, g = geometria()) => Math.round(g.base + n * g.paso);
-  const posicion = (g = geometria()) => (scrollY - g.base) / g.paso;
 
-  // Deja la página en el módulo n (no se nota: la parte fija no se mueve).
-  function fijar(n) {
-    const y = posicionDe(n);
-    if (Math.abs(scrollY - y) > 1) scrollTo({ top: y, behavior: 'instant' });
+  // Deja la página en su sitio (no se nota: la parte fija no se mueve).
+  function fijar() {
+    const l = limites();
+    const y = casa === 'fin' ? l.fin : l.inicio;
+    if (Math.abs(scrollY - y) > 1) scrollTo(0, y);
     ultimoY = scrollY;
   }
 
@@ -330,8 +353,9 @@ export function montarRecorrido(raiz) {
     return Boolean(retencion);
   }
 
-  function entrar(n, retener) {
+  function entrar(n, lado, retener) {
     fase = 'dentro';
+    casa = lado;
     modulo = n;
     completados = n;
     pendiente = null;
@@ -340,9 +364,10 @@ export function montarRecorrido(raiz) {
     // El gesto que ha traído hasta aquí ya ha hecho lo suyo: para avanzar hace falta otro.
     gastado = true;
     ultimaRueda = ahora;
+    enReposoDesde = ahora;
     if (dedo) dedo.usado = true;
     mostrar(n);
-    fijar(n);
+    fijar();
     escuchar(true);
   }
 
@@ -361,16 +386,34 @@ export function montarRecorrido(raiz) {
     }
   }
 
-  // Con el scroll libre (hacia arriba, barra de scroll…), el módulo es el de la posición.
-  function seguir(pos) {
-    if (pos < -0.01) { salir('arriba'); return; }
-    if (pos > ESCENAS + 0.01) { salir('abajo'); return; }
-    const n = Math.min(ESCENAS - 1, Math.max(0, Math.floor(pos + 0.01)));
-    if (n !== modulo) {
-      modulo = n;
-      completados = n;
-      mostrar(n);
+  // Un módulo atrás, sin vídeo (con un fundido). Desde el primero se sale por arriba: devuelve
+  // false y el gesto sigue su curso (la página sube).
+  function retroceder() {
+    if (modulo === 0) {
+      casa = 'inicio';
+      fijar();
+      salir('arriba');
+      return false;
     }
+    modulo -= 1;
+    completados = modulo;
+    enReposoDesde = performance.now();
+    mostrar(modulo);
+    // Si se había entrado por abajo, la página pasa al inicio (no se nota, está fija) para que
+    // desde el primer módulo se salga en cuanto se sube.
+    if (casa === 'fin') { casa = 'inicio'; fijar(); }
+    return true;
+  }
+
+  // Con «reducir movimiento» no se intercepta nada: la sección es larga y el módulo es el de
+  // la posición del scroll (imágenes fijas).
+  function seguirReducido() {
+    const arriba = parseFloat(getComputedStyle(fijo).top) || 0;
+    const base = raiz.getBoundingClientRect().top + scrollY - arriba;
+    const paso = Math.max(1, (raiz.offsetHeight - fijo.offsetHeight) / ESCENAS);
+    const n = Math.min(ESCENAS - 1, Math.max(0, Math.floor((scrollY - base) / paso + 0.01)));
+    if (n !== vista.e) { modulo = n; completados = n; vista = { e: n, t: 0 }; sucio = true; animar(); }
+    return { base, paso };
   }
 
   function alHacerScroll() {
@@ -382,54 +425,44 @@ export function montarRecorrido(raiz) {
       clearTimeout(temporizador);
       temporizador = setTimeout(alAcabarScroll, QUIETO);
     }
+    if (reducido) { seguirReducido(); return; }
     if (deslizando) return;
-    const pos = posicion();
     const ahora = performance.now();
-
-    if (reducido) {
-      const n = Math.min(ESCENAS - 1, Math.max(0, Math.floor(pos + 0.01)));
-      if (n !== vista.e) { modulo = n; completados = n; vista = { e: n, t: 0 }; sucio = true; animar(); }
-      return;
-    }
+    const l = limites();
 
     if (fase === 'dentro') {
-      // Mientras se reproduce una escena o se frena la llegada, la página no se mueve del módulo.
-      if (reproduccion || retenida(ahora)) {
-        if (retencion) retencion.ultimo = ahora;
-        fijar(modulo);
-      } else if (direccion < 0 || ahora < libreHasta) {
-        seguir(pos);
-      } else if (pos > modulo + 0.01) {
-        // Hacia abajo sin un gesto de avance (inercia que venía de antes…): no se pasa del módulo.
-        fijar(modulo);
+      // Con la barra de scroll o las teclas Inicio/Fin manda el scroll; si no, la página no se
+      // mueve de su sitio (lo que empuje, como la inercia de la llegada, no la mueve).
+      if (!reproduccion && ahora < libreHasta) {
+        if (y < l.inicio - 2) salir('arriba');
+        else if (y > l.fin + 2) salir('abajo');
+        return;
       }
+      if (retencion) retencion.ultimo = ahora;
+      fijar();
       return;
     }
     if (fase === 'arriba') {
-      if (pos >= ESCENAS - 0.01) fase = 'abajo'; // ha saltado entera (tecla Fin…)
-      else if (pos >= -0.002) entrar(pendiente ?? 0, true);
+      if (y > l.fin + 2) fase = 'abajo'; // ha saltado entera (tecla Fin…)
+      else if (y >= l.inicio - 1) entrar(pendiente ?? 0, 'inicio', true);
       return;
     }
-    // Abajo: al volver a subir, se entra por el último módulo con el scroll libre.
-    if (pos < 0) salir('arriba');
-    else if (pos < ESCENAS - 0.01) {
-      fase = 'dentro';
-      escuchar(true);
-      seguir(pos);
-    }
+    // Abajo (se suelta justo en el fin): al volver a subir, se para en el último módulo.
+    if (y < l.inicio - 2) salir('arriba');
+    else if (y < l.fin - 1) entrar(ESCENAS - 1, 'fin', true);
   }
 
-  // Al acabar un gesto: dentro, la página vuelve al sitio del módulo; llegando desde arriba con
-  // la sección casi entera a la vista, termina de colocarse en el primero.
+  // Al acabar un gesto: dentro, la página vuelve a su sitio; llegando desde arriba con la
+  // sección casi entera a la vista, termina de colocarse en el primer módulo.
   function alAcabarScroll() {
     if (!raiz.isConnected || tocando || deslizando || reducido) return;
     if (fase === 'dentro') {
-      if (!reproduccion && performance.now() >= libreHasta) fijar(modulo);
+      if (!reproduccion && performance.now() >= libreHasta) fijar();
       return;
     }
     if (fase === 'arriba' && direccion > 0) {
-      const pos = posicion();
-      if (pos > -COLOCAR_DESDE && pos < 0) colocar(pendiente ?? 0);
+      const falta = (limites().inicio - scrollY) / Math.max(1, fijo.offsetHeight);
+      if (falta > 0 && falta < COLOCAR_DESDE) colocar(pendiente ?? 0);
     }
   }
 
@@ -437,17 +470,17 @@ export function montarRecorrido(raiz) {
   // corta; se corta en cuanto se vuelve a tocar, a mover la rueda o a pulsar una tecla.
   function colocar(n) {
     const y0 = scrollY;
-    const y1 = posicionDe(0);
+    const y1 = limites().inicio;
     const t0 = performance.now();
     deslizando = true;
     const paso = (ahora) => {
       if (!deslizando) return;
       const k = Math.min(1, (ahora - t0) / COLOCACION);
-      scrollTo({ top: y0 + (y1 - y0) * (1 - (1 - k) ** 3), behavior: 'instant' });
+      scrollTo(0, y0 + (y1 - y0) * (1 - (1 - k) ** 3));
       if (k < 1) { requestAnimationFrame(paso); return; }
       deslizando = false;
       ultimoY = scrollY;
-      entrar(n, false);
+      entrar(n, 'inicio', false);
     };
     requestAnimationFrame(paso);
   }
@@ -459,14 +492,19 @@ export function montarRecorrido(raiz) {
     if (deslizando) { deslizando = false; ultimoY = scrollY; }
   }
 
-  // Rueda y trackpad (solo dentro de la sección). Un gesto nuevo es el que llega tras una
-  // pausa o en el sentido contrario: la inercia del anterior no cuenta.
+  // Rueda y trackpad (solo dentro de la sección): hacia abajo reproduce la escena, hacia
+  // arriba vuelve un módulo. Un gesto nuevo es el que llega tras una pausa, en el sentido
+  // contrario o más fuerte que el anterior (la inercia va a menos, así que no cuenta); o un
+  // golpe fuerte cuando ya se lleva un rato parado en el módulo (quien sigue girando la rueda).
   function alRueda(e) {
     if (e.ctrlKey) return; // zoom
     const ahora = performance.now();
     const signo = Math.sign(e.deltaY);
-    if (ahora - ultimaRueda > PAUSA_GESTO || (signo && signo !== signoRueda)) gastado = false;
+    const fuerza = Math.abs(e.deltaY) * (e.deltaMode === 1 ? 33 : e.deltaMode === 2 ? 600 : 1);
+    if (ahora - ultimaRueda > PAUSA_GESTO || (signo && signo !== signoRueda) || fuerza > fuerzaRueda * 1.5 + 4
+      || (!reproduccion && ahora - enReposoDesde > REPOSO_RUEDA && fuerza >= 40)) gastado = false;
     ultimaRueda = ahora;
+    fuerzaRueda = fuerza;
     if (signo) signoRueda = signo;
     if (reproduccion || retenida(ahora)) {
       if (retencion) retencion.ultimo = ahora;
@@ -474,9 +512,14 @@ export function montarRecorrido(raiz) {
       gastado = true;
       return;
     }
-    if (e.deltaY <= 0) return; // hacia arriba (o de lado): scroll libre
+    if (!signo) return; // de lado
+    // Hacia arriba desde el primer módulo, un gesto nuevo sale: el scroll sigue normal.
+    if (signo < 0 && modulo === 0 && !gastado) { retroceder(); return; }
     if (e.cancelable) e.preventDefault();
-    if (!gastado) { gastado = true; reproducir(); }
+    if (gastado) return;
+    gastado = true;
+    if (signo > 0) reproducir();
+    else retroceder();
   }
 
   const alTocar = (e) => {
@@ -495,16 +538,22 @@ export function montarRecorrido(raiz) {
     }
   };
 
-  // El dedo (solo dentro de la sección): se decide con el primer movimiento. Hacia abajo
-  // (el dedo sube) avanza y la página no se mueve; hacia arriba, scroll libre.
+  // El dedo (solo dentro de la sección): se decide con el primer movimiento y la página no se
+  // mueve. Hacia abajo (el dedo sube) reproduce la escena; hacia arriba vuelve un módulo, y
+  // desde el primero sale (el scroll sigue normal).
   function alMoverDedo(e) {
     if (!dedo || e.touches.length !== 1) return;
     if (reproduccion || retenida(performance.now())) { if (e.cancelable) e.preventDefault(); return; }
     const dy = dedo.y - e.touches[0].clientY;
-    if (!dedo.decidido) dedo.decidido = dy < 0 ? 'arriba' : 'abajo';
-    if (dedo.decidido === 'arriba') return;
+    if (!dedo.decidido) {
+      dedo.decidido = dy < 0 ? 'arriba' : 'abajo';
+      if (dedo.decidido === 'arriba' && modulo === 0 && !dedo.usado) { retroceder(); return; }
+    }
     if (e.cancelable) e.preventDefault();
-    if (dy >= UMBRAL_DEDO && !dedo.usado) { dedo.usado = true; reproducir(); }
+    if (dedo.usado || Math.abs(dy) < UMBRAL_DEDO) return;
+    dedo.usado = true;
+    if (dedo.decidido === 'abajo') reproducir();
+    else retroceder();
   }
 
   function alPulsarTecla(e) {
@@ -515,14 +564,13 @@ export function montarRecorrido(raiz) {
     if (e.key === ' ' && e.target.closest?.('button')) return;
     const abajo = e.key === 'ArrowDown' || e.key === 'PageDown' || (e.key === ' ' && !e.shiftKey);
     const arriba = e.key === 'ArrowUp' || e.key === 'PageUp' || (e.key === ' ' && e.shiftKey);
-    if (reproduccion || retenida(performance.now())) {
-      if (abajo || arriba) e.preventDefault();
-      return;
-    }
-    if (abajo) {
-      e.preventDefault();
-      if (!e.repeat) reproducir();
-    }
+    if (!abajo && !arriba) return;
+    if (reproduccion || retenida(performance.now())) { e.preventDefault(); return; }
+    if (arriba && modulo === 0) { retroceder(); return; } // sale: la tecla sube la página
+    e.preventDefault();
+    if (e.repeat) return;
+    if (abajo) reproducir();
+    else retroceder();
   }
 
   // Arrastrar la barra de scroll: manda la barra, sin retener nada.
@@ -547,19 +595,30 @@ export function montarRecorrido(raiz) {
 
   // Lleva al módulo n (0-3): baja hasta la sección, ya con su escena y su texto.
   function irA(n) {
-    if (reducido) { scrollTo({ top: posicionDe(n), behavior: 'instant' }); return; }
+    if (reducido) {
+      const { base, paso } = seguirReducido();
+      scrollTo(0, Math.round(base + n * paso));
+      return;
+    }
     if (reproduccion) return;
-    if (fase === 'dentro') { modulo = n; completados = n; mostrar(n); fijar(n); return; }
+    if (fase === 'dentro') { modulo = n; completados = n; mostrar(n); return; }
     completados = n;
     mostrar(n);
-    scrollTo({ top: posicionDe(0), behavior: 'smooth' });
+    scrollTo({ top: limites().inicio, behavior: 'smooth' });
     pendiente = n; // después de pedir el scroll: cualquier gesto del usuario lo anula
   }
 
   const alCambiarTamano = () => { sucio = true; animar(); };
+  // Los fotogramas se piden en cuanto se abre la portada; si está la intro, al acabar (para
+  // no quitarle red), o antes si se baja hasta cerca de la sección.
   const carga = new IntersectionObserver((entradas) => {
     if (entradas.some((x) => x.isIntersecting)) empezarCarga();
   }, { rootMargin: '150% 0px' });
+  const trasIntro = new MutationObserver(() => {
+    if (document.documentElement.hasAttribute('data-intro')) return;
+    trasIntro.disconnect();
+    empezarCarga();
+  });
   const vigia = new IntersectionObserver((entradas) => {
     visible = entradas.some((x) => x.isIntersecting);
     if (visible) { sucio = true; animar(); }
@@ -567,6 +626,7 @@ export function montarRecorrido(raiz) {
 
   function desmontar() {
     carga.disconnect();
+    trasIntro.disconnect();
     vigia.disconnect();
     clearTimeout(temporizador);
     escuchar(false);
@@ -585,6 +645,11 @@ export function montarRecorrido(raiz) {
   }
 
   carga.observe(raiz);
+  if (document.documentElement.hasAttribute('data-intro')) {
+    trasIntro.observe(document.documentElement, { attributes: true, attributeFilter: ['data-intro'] });
+  } else {
+    setTimeout(() => raiz.isConnected && empezarCarga(), 250);
+  }
   vigia.observe(raiz);
   addEventListener('scroll', alHacerScroll, { passive: true });
   addEventListener('scrollend', alAcabarScroll);
@@ -598,9 +663,12 @@ export function montarRecorrido(raiz) {
   addEventListener('pointerup', alLevantar, { passive: true });
 
   // Si la página ya está dentro o más abajo (al volver a la portada), se empieza ahí.
-  const pos = posicion();
-  if (pos >= ESCENAS - 0.01) salir('abajo');
-  else if (pos >= 0) { fase = 'dentro'; escuchar(true); seguir(pos); }
+  if (reducido) seguirReducido();
+  else {
+    const l = limites();
+    if (scrollY > l.fin + 2) salir('abajo');
+    else if (scrollY >= l.inicio - 1) entrar(0, 'inicio', false);
+  }
   pasos.forEach((p, i) => p.classList.toggle('activo', i === modulo));
   pasoActivo = modulo;
   animar();

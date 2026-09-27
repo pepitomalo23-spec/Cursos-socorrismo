@@ -675,14 +675,17 @@ section.vacio p { margin-bottom: 22px; }
 }
 
 /* ---------- Recorrido por los módulos (js/recorrido.js) ----------
-   La sección mide varias pantallas; su interior se queda fijo, en el hueco entre la cabecera
-   y (en el móvil) la barra de abajo, mientras se va de módulo en módulo. La altura
+   Su interior se queda fijo, en el hueco entre la cabecera y (en el móvil) la barra de
+   abajo, mientras se va de módulo en módulo. La altura
    de la sección usa svh, que no cambia al esconderse la barra de direcciones del móvil (así
    la página no da saltos); la parte fija usa dvh para llenar siempre lo que se ve.
    Los textos y la barra de progreso de cada paso se apilan en una rejilla: el bloque mide lo
    que el paso más largo, y en vertical la imagen ocupa el resto. */
 
 .recorrido { position: relative; height: calc(var(--hueco) * 5); margin: 0 0 16px; }
+/* De módulo en módulo (lo normal): la página no se mueve dentro, así que basta algo más de una
+   pantalla; lo que sobra frena la inercia al llegar. La larga es para «reducir movimiento». */
+.recorrido.por-pasos { height: calc(var(--hueco) * 1.5); }
 .recorrido-fijo {
   position: sticky;
   top: var(--alto-cabecera, 0px);
