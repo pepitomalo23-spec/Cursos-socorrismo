@@ -70,7 +70,7 @@ export function montarBienvenida(portada) {
     // Posiciones en pantalla con la página arriba del todo; la cabecera no se mueve (sticky).
     const x0 = inicio.left + scrollX;
     const y0 = inicio.top + scrollY;
-    const conMenu = matchMedia('(min-width: 641px)').matches; // en el móvil el menú es la barra de abajo
+    const conMenu = matchMedia('(min-width: 641px)').matches; // en el móvil el menú es el botón ☰
     const medidas = [x0, y0, inicio.width, fin.left, fin.top, fin.width, portada.offsetHeight, conMenu].join();
     if (medidas === firma && !forzar) return;
     firma = medidas;
@@ -113,7 +113,7 @@ export function montarBienvenida(portada) {
     animar(aviso, [{ opacity: 1 }, { opacity: 0, offset: AVISO_HASTA }, { opacity: 0 }]);
 
     const aparece = [{ opacity: 0 }, { opacity: 0, offset: APARECE_DESDE }, { opacity: 1 }];
-    for (const el of cabecera.querySelectorAll(conMenu ? '.nav, .usuario, .tema-suelto' : '.usuario, .tema-suelto')) animar(el, aparece);
+    for (const el of cabecera.querySelectorAll(conMenu ? '.nav, .usuario, .tema-suelto' : '.menu-movil')) animar(el, aparece);
     animar(cabecera, aparece, { pseudoElement: '::after' }); // su borde
   }
 

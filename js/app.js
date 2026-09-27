@@ -112,6 +112,7 @@ async function mostrar() {
 }
 
 function pintarCabecera(camino) {
+  document.documentElement.classList.remove('menu-abierto'); // el menú del móvil se pinta cerrado
   const u = sesion.usuario();
   const enlaces = u
     ? [
@@ -147,7 +148,25 @@ function pintarCabecera(camino) {
           <button type="button" class="usuario-opcion peligro" data-salir>${icono('salir')}<span>Cerrar sesión</span></button>
         </div>
       </div>` : `
-      <button type="button" class="usuario-boton tema-suelto" data-tema aria-label="${temaActual() === 'light' ? 'Tema oscuro' : 'Tema claro'}">${icono(temaActual() === 'light' ? 'luna' : 'sol')}</button>`}`;
+      <button type="button" class="usuario-boton tema-suelto" data-tema aria-label="${temaActual() === 'light' ? 'Tema oscuro' : 'Tema claro'}">${icono(temaActual() === 'light' ? 'luna' : 'sol')}</button>`}
+    <div class="menu-movil">
+      <button type="button" class="usuario-boton menu-boton" aria-expanded="false" aria-controls="menu-panel" aria-label="Menú">${icono('menu', 'icono-abrir')}${icono('cerrar', 'icono-cerrar')}</button>
+      <div class="menu-panel" id="menu-panel" hidden>
+        ${u ? `
+          <div class="menu-cuenta">
+            <span class="menu-avatar">${icono('usuario')}</span>
+            <span><strong>${esc(u.nombre)}</strong><span>${esc(u.email)}</span></span>
+          </div>` : ''}
+        <nav class="menu-enlaces" aria-label="Principal">
+          ${enlaces.map(([href, texto, ico]) => `
+            <a class="menu-enlace" href="${href}" ${activo(href) ? 'aria-current="page"' : ''}>${icono(ico)}<span>${esc(texto)}</span></a>`).join('')}
+        </nav>
+        <div class="menu-opciones">
+          <button type="button" class="usuario-opcion" data-tema>${icono(temaActual() === 'light' ? 'luna' : 'sol')}<span>${temaActual() === 'light' ? 'Tema oscuro' : 'Tema claro'}</span></button>
+          ${u ? `<button type="button" class="usuario-opcion peligro" data-salir>${icono('salir')}<span>Cerrar sesión</span></button>` : ''}
+        </div>
+      </div>
+    </div>`;
 
   medirCabecera();
 
@@ -158,28 +177,48 @@ function pintarCabecera(camino) {
     boton.setAttribute('aria-expanded', String(!menu.hidden));
   });
 
+  // Menú del móvil (☰): se abre y cierra con su botón; al elegir algo, se cierra solo.
+  const botonMenu = cabecera.querySelector('.menu-boton');
+  botonMenu.addEventListener('click', () => (botonMenu.getAttribute('aria-expanded') === 'true' ? cerrarMenuMovil() : abrirMenuMovil()));
+  for (const a of cabecera.querySelectorAll('.menu-enlace')) a.addEventListener('click', cerrarMenuMovil);
+
   for (const b of cabecera.querySelectorAll('[data-tema]')) {
     b.addEventListener('click', () => {
       cambiarTema(temaActual() === 'light' ? 'dark' : 'light');
       pintarCabecera(camino);
     });
   }
-  cabecera.querySelector('[data-salir]')?.addEventListener('click', () => {
-    if (vistaActual?.puedeSalir && !vistaActual.puedeSalir()) return;
-    vistaActual = null;
-    sesion.salir();
-    location.hash = '#/';
-  });
+  for (const b of cabecera.querySelectorAll('[data-salir]')) {
+    b.addEventListener('click', () => {
+      if (vistaActual?.puedeSalir && !vistaActual.puedeSalir()) return;
+      vistaActual = null;
+      sesion.salir();
+      location.hash = '#/';
+    });
+  }
 }
 
-// Alto de la cabecera y de la barra de abajo del móvil, para el css (--alto-cabecera,
-// --alto-barra): la portada y el recorrido ocupan justo el hueco que queda entre ellas. Solo
-// cambia con el ancho (no al esconderse la barra de direcciones del móvil, que no las toca).
+function abrirMenuMovil() {
+  const panel = cabecera.querySelector('.menu-panel');
+  if (!panel) return;
+  panel.hidden = false;
+  cabecera.querySelector('.menu-boton').setAttribute('aria-expanded', 'true');
+  document.documentElement.classList.add('menu-abierto');
+}
+
+function cerrarMenuMovil() {
+  const panel = cabecera.querySelector('.menu-panel');
+  if (!panel || panel.hidden) return;
+  panel.hidden = true;
+  cabecera.querySelector('.menu-boton').setAttribute('aria-expanded', 'false');
+  document.documentElement.classList.remove('menu-abierto');
+}
+
+// Alto de la cabecera, para el css (--alto-cabecera): la portada y el recorrido ocupan justo el
+// hueco que queda debajo. Solo cambia con el ancho (no al esconderse la barra de direcciones
+// del móvil, que no la toca).
 function medirCabecera() {
-  const nav = cabecera.querySelector('.nav');
-  const barra = nav && getComputedStyle(nav).position === 'fixed' ? nav.offsetHeight : 0;
   document.documentElement.style.setProperty('--alto-cabecera', `${cabecera.offsetHeight}px`);
-  document.documentElement.style.setProperty('--alto-barra', `${barra}px`);
 }
 let anchoMedido = innerWidth;
 addEventListener('resize', () => {
@@ -194,8 +233,17 @@ function cerrarMenuUsuario() {
   menu.hidden = true;
   cabecera.querySelector('.usuario > .usuario-boton')?.setAttribute('aria-expanded', 'false');
 }
-document.addEventListener('click', (e) => { if (!e.target.closest?.('.usuario')) cerrarMenuUsuario(); });
-document.addEventListener('keydown', (e) => { if (e.key === 'Escape') cerrarMenuUsuario(); });
+document.addEventListener('click', (e) => {
+  if (!e.target.closest?.('.usuario')) cerrarMenuUsuario();
+  if (!e.target.closest?.('.menu-movil')) cerrarMenuMovil();
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Escape') return;
+  cerrarMenuUsuario();
+  cerrarMenuMovil();
+});
+// Si se pasa a pantalla ancha con el menú del móvil abierto, se cierra.
+matchMedia('(min-width: 641px)').addEventListener('change', (e) => { if (e.matches) cerrarMenuMovil(); });
 
 // Tema claro u oscuro (oscuro por defecto). js/tema-previo.js lo aplica antes de pintar.
 function temaActual() {

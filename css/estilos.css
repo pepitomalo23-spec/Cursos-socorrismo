@@ -34,13 +34,12 @@
   color-scheme: dark;
 }
 
-/* Hueco que queda entre la cabecera y, en el móvil, la barra de abajo (sus altos los mide
-   js/app.js). Usa svh, que no cambia al esconderse la barra de direcciones del móvil: así
+/* Hueco que queda debajo de la cabecera (su alto lo mide js/app.js). Usa svh, que no cambia al esconderse la barra de direcciones del móvil: así
    ni el scroll ni lo que está fijo (el recorrido) cambian de tamaño a mitad (en el móvil,
    ese cambio se veía como un fogonazo al seguir bajando tras el cuarto módulo). */
-:root { --hueco: calc(100vh - var(--alto-cabecera, 61px) - var(--alto-barra, 0px)); }
+:root { --hueco: calc(100vh - var(--alto-cabecera, 61px)); }
 @supports (height: 100svh) {
-  :root { --hueco: calc(100svh - var(--alto-cabecera, 61px) - var(--alto-barra, 0px)); }
+  :root { --hueco: calc(100svh - var(--alto-cabecera, 61px)); }
 }
 
 :root[data-theme="light"] {
@@ -200,28 +199,71 @@ svg { display: block; }
 .usuario-opcion.peligro:hover { color: var(--coral); }
 .usuario-opcion .icono { width: 18px; height: 18px; color: var(--muted); }
 
-/* En el móvil los accesos pasan a una barra de pestañas fija abajo, como en pj.fire. */
+/* Menú del móvil (☰): en pantallas estrechas, el menú, el perfil y el tema van en un panel
+   que se abre desde la esquina (js/app.js). En pantallas anchas no se ve. */
+.menu-movil { display: none; }
 @media (max-width: 640px) {
-  .cabecera { grid-template-columns: 1fr auto; padding: 12px 16px; min-height: 60px; }
-  .nav {
+  .cabecera { grid-template-columns: 1fr auto; padding: 10px 16px; min-height: 60px; }
+  .cabecera > .nav, .cabecera > .usuario, .cabecera > .tema-suelto { display: none; }
+  .menu-movil { display: block; justify-self: end; }
+  .menu-boton .icono { width: 20px; height: 20px; }
+  .menu-boton[aria-expanded="true"] { border-color: var(--purple); color: var(--text); }
+  .menu-boton .icono-cerrar, .menu-boton[aria-expanded="true"] .icono-abrir { display: none; }
+  .menu-boton[aria-expanded="true"] .icono-cerrar { display: block; }
+  .menu-panel {
     position: fixed;
+    top: var(--alto-cabecera, 60px);
     left: 0;
     right: 0;
-    bottom: 0;
-    z-index: 30;
-    gap: 2px;
-    justify-content: space-around;
-    padding: 10px 10px calc(18px + env(safe-area-inset-bottom, 0px));
+    z-index: 60;
+    max-height: calc(100dvh - var(--alto-cabecera, 60px));
+    overflow-y: auto;
+    padding: 14px 16px calc(18px + env(safe-area-inset-bottom, 0px));
+    border-bottom: 1px solid var(--line);
     background: var(--bg);
-    border-top: 1px solid var(--line);
+    box-shadow: 0 24px 40px rgba(0, 0, 0, 0.45);
+    animation: menu-baja 0.2s ease-out;
   }
-  .nav-punto { display: none; }
-  .nav-item { flex: 1 1 0; min-width: 0; flex-direction: column; justify-content: center; gap: 4px; padding: 6px 2px; }
-  .nav-item .icono { width: 21px; height: 21px; }
-  .nav-texto { font-family: var(--sans); font-size: 9.5px; font-weight: 600; letter-spacing: 0.01em; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
-  main { padding: 24px 0 118px; }
+  .menu-panel[hidden] { display: none; }
+  /* Oscurece lo de debajo mientras está abierto (tocar fuera lo cierra). */
+  html.menu-abierto body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: 35;
+    background: rgba(0, 0, 0, 0.45);
+    animation: aparecer 0.2s ease-out;
+  }
+  html.menu-abierto body { overflow: hidden; }
+  .menu-cuenta { display: flex; align-items: center; gap: 12px; padding: 4px 4px 14px; margin-bottom: 8px; border-bottom: 1px solid var(--line); }
+  .menu-avatar { display: grid; place-items: center; flex-shrink: 0; width: 40px; height: 40px; border: 1px solid var(--line); border-radius: 50%; background: var(--card); color: var(--muted); }
+  .menu-avatar .icono { width: 18px; height: 18px; }
+  .menu-cuenta > span:last-child { display: flex; flex-direction: column; min-width: 0; }
+  .menu-cuenta strong { font-size: 15px; }
+  .menu-cuenta strong + span { overflow: hidden; color: var(--muted); font-size: 12.5px; text-overflow: ellipsis; white-space: nowrap; }
+  .menu-enlaces { display: flex; flex-direction: column; gap: 2px; }
+  .menu-enlace {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 13px 10px;
+    border-radius: 12px;
+    color: var(--text);
+    font-family: var(--title);
+    font-size: 21px;
+    letter-spacing: 0.3px;
+    text-decoration: none !important;
+  }
+  .menu-enlace .icono { width: 21px; height: 21px; color: var(--muted-2); }
+  .menu-enlace:hover, .menu-enlace:active { background: var(--card); }
+  .menu-enlace[aria-current="page"] { color: var(--coral); }
+  .menu-enlace[aria-current="page"] .icono { color: var(--coral); }
+  .menu-opciones { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); }
+  main { padding: 24px 0 64px; }
   .contenedor { padding: 0 16px; }
 }
+@keyframes menu-baja { from { opacity: 0; transform: translateY(-8px); } }
+@media (prefers-reduced-motion: reduce) { .menu-panel, html.menu-abierto body::after { animation: none; } }
 
 /* ---------- Pie ---------- */
 
@@ -231,7 +273,7 @@ svg { display: block; }
 .pie strong { color: var(--muted); font-weight: 600; }
 .pie a { color: var(--muted); }
 .nota-demo { margin-top: 10px !important; font-family: var(--mono); font-size: 11px; opacity: 0.8; }
-@media (max-width: 640px) { #pie { padding-bottom: 96px; } .pie { padding: 20px 16px; } }
+@media (max-width: 640px) { .pie { padding: 20px 16px calc(20px + env(safe-area-inset-bottom, 0px)); } }
 
 /* ---------- Botones ---------- */
 
@@ -555,7 +597,7 @@ section.vacio p { margin-bottom: 22px; }
 /* Mientras el logo vuela, la cabecera solo es fondo (el mismo que la portada): el logo de la
    cabecera, su borde, el menú y el botón de perfil o tema aparecen con el vuelo y no se
    pueden pulsar hasta que aterriza. El borde pasa a ser una línea aparte para encenderlo
-   sin repintar. En el móvil el menú es la barra de abajo y se queda como está. */
+   sin repintar. En el móvil, en vez del menú y el perfil aparece el botón ☰. */
 .cabecera.con-vuelo { border-bottom-color: transparent; }
 .cabecera.con-vuelo::after {
   content: '';
@@ -567,7 +609,7 @@ section.vacio p { margin-bottom: 22px; }
   background: var(--line);
   pointer-events: none;
 }
-.cabecera.sin-aterrizar :is(.usuario, .tema-suelto) { pointer-events: none; }
+.cabecera.sin-aterrizar :is(.usuario, .tema-suelto, .menu-movil) { pointer-events: none; }
 @media (min-width: 641px) {
   .cabecera.sin-aterrizar .nav { pointer-events: none; }
 }

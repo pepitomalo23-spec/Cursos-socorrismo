@@ -4,7 +4,8 @@ Web propia de la escuela: portada pública con los cursos y, para los alumnos, e
 los tests y las notas. Es una web estática (HTML, CSS y JavaScript, sin paso de compilación)
 pensada para publicarse en Vercel. El diseño sigue el de pj.fire: fondo negro (con tema claro
 opcional), tarjetas con borde fino y las mismas tipografías (Anton, Inter, Source Serif 4 y
-JetBrains Mono, desde Google Fonts).
+JetBrains Mono, desde Google Fonts). En el móvil no hay barra abajo: el menú, el perfil y el
+tema van en un botón ☰ en la esquina de la cabecera, que abre un panel.
 
 > **Estado: demostración.** Todavía no hay base de datos: todo se guarda en el navegador
 > (`localStorage`), así que cada navegador tiene su propia copia de los cursos, alumnos y notas.
@@ -149,8 +150,8 @@ alumno no está matriculado en ese módulo.
   texto abajo y la escena arriba ocupando lo que queda (centrada en el socorrista), así que
   cabe en cualquier móvil; en pantallas bajas se quita la descripción.
 - Sin saltos en el móvil: la portada y el recorrido miden con `svh`, que no cambia al
-  esconderse la barra de direcciones (`--hueco`; los altos de la cabecera
-  y de la barra de abajo los mide `js/app.js`).
+  esconderse la barra de direcciones (`--hueco`; el alto de la cabecera lo mide
+  `js/app.js`).
 - Con «reducir movimiento» se ven cuatro imágenes fijas que cambian con el scroll (la sección
   es más larga), sin interceptar gestos.
 
