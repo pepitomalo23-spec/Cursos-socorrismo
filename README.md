@@ -42,7 +42,7 @@ js/intro-previo.js      decide antes de pintar si toca la intro (una vez por vis
 js/intro.js, css/intro.css  intro del logo a pantalla completa (fotogramas en <canvas>)
 assets/intro/           fotogramas de la intro e imagen fija del final
 js/bienvenida.js        bienvenida de la portada: el logo de fondo que vuela a la cabecera al bajar
-js/recorrido.js         recorrido por los 4 módulos en la portada (escenas que avanzan con el scroll)
+js/recorrido.js         recorrido por los 4 módulos en la portada (una escena por gesto, de módulo en módulo)
 assets/recorrido/       fotogramas del recorrido
 fuentes/                vídeos originales de la intro y del recorrido (no se publican)
 scripts/                genera los fotogramas desde los vídeos (no se publica)
@@ -122,24 +122,31 @@ datos) con dos recuadros, «Temario» y «Test», que llevan a ese módulo. La p
 los recuadros piden entrar; con sesión, enseñan los temas y la media, o «Sin acceso» si el
 alumno no está matriculado en ese módulo.
 
-- **Avanza con el scroll:** cada escena va hacia delante o hacia atrás al ritmo del dedo o
-  de la rueda y, al acabar, se funde con la siguiente. Para que se vea fluido: 20 fotogramas
-  por segundo de vídeo; cuando el scroll cae entre dos fotogramas se dibuja la mezcla de
-  ambos (sin saltos aunque se baje muy despacio), y el vídeo sigue al scroll con una inercia
-  muy corta para que un golpe de rueda no sea un salto brusco. El lienzo solo se dibuja si
-  está a la vista y algo ha cambiado, y nunca a más resolución que la de los fotogramas.
+- **De módulo en módulo:** al llegar, la página se coloca en el primer módulo (si se baja de
+  golpe se para ahí, y si se deja casi entera a la vista termina de colocarse sola). Cada
+  gesto hacia abajo (rueda, trackpad, dedo o flecha/espacio) reproduce la escena entera, un
+  pelín más rápida que el vídeo (`VELOCIDAD` en `js/recorrido.js`: 5 s → 4 s), y se para en
+  el principio de la siguiente, ya con su módulo; mientras dura no se mueve nada y la
+  inercia del gesto no cuenta para el siguiente. Tras el cuarto, la página sigue normal.
+  Hacia arriba el scroll es libre: se vuelve de módulo en módulo y, desde el primero, se sale.
+  Los gestos solo se interceptan dentro de la sección (fuera, el scroll es el del navegador).
+  Los botones «Ve directo a un módulo» y «Desliza para empezar» llevan a su módulo.
+- Fluidez: el avance lo marca el reloj, a 20 fotogramas por segundo de vídeo, y entre dos
+  fotogramas se dibuja la mezcla de ambos; al final, la escena se funde con el principio de
+  la siguiente. El lienzo solo se dibuja si está a la vista y algo ha cambiado, y nunca a más
+  resolución que la de los fotogramas.
 - Misma técnica que la intro: fotogramas en `<canvas>`. 350 fotogramas en
   `assets/recorrido/v3/`, AVIF (WebP de respaldo), a 960 px (móviles, ~6,7 MB en total) y
   1440 px (pantallas grandes, ~12 MB). No se descarga nada hasta acercarse a la sección, y
-  primero llega lo más útil (el inicio de cada escena, luego uno de cada 8, 4, 2…): se puede
-  bajar enseguida.
+  primero llega lo más útil (el inicio de cada escena y la del módulo en el que se está).
 - Horizontal: la escena llena el hueco con el texto encima, a la izquierda. Vertical: el
   texto abajo y la escena arriba ocupando lo que queda (centrada en el socorrista), así que
   cabe en cualquier móvil; en pantallas bajas se quita la descripción.
 - Sin saltos en el móvil: la portada y el recorrido miden con `svh`, que no cambia al
   esconderse la barra de direcciones (`--hueco`, `--hueco-visible`; los altos de la cabecera
   y de la barra de abajo los mide `js/app.js`).
-- Con «reducir movimiento» se ven cuatro imágenes fijas.
+- Con «reducir movimiento» se ven cuatro imágenes fijas que cambian con el scroll, sin
+  interceptar gestos.
 
 **Cambiar las escenas:** poner los vídeos nuevos como `fuentes/recorrido/1.mp4` … `4.mp4` y
 ejecutar `scripts/recorrido-fotogramas.sh fuentes/recorrido v4`; después cambiar `RUTA` en

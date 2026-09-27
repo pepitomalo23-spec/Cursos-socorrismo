@@ -137,14 +137,19 @@ export async function render(el) {
     tour.irA(Number(e.currentTarget.dataset.modulo));
   }));
 
-  // «Desliza para empezar» baja al recorrido sin cambiar la dirección.
-  el.querySelectorAll('[data-desplazar]').forEach((boton) => boton.addEventListener('click', (e) => {
+  // «Desliza para empezar» baja al primer módulo del recorrido sin cambiar la dirección.
+  el.querySelector('[data-desplazar]')?.addEventListener('click', (e) => {
     e.preventDefault();
-    document.getElementById(e.currentTarget.dataset.desplazar).scrollIntoView({ behavior: 'smooth' });
-  }));
+    tour.irA(0);
+  });
 
-  // Al salir de la portada, la cabecera vuelve a ser la de siempre.
-  return { alSalir: desmontarBienvenida };
+  // Al salir de la portada, la cabecera vuelve a ser la de siempre y el scroll, el normal.
+  return {
+    alSalir: () => {
+      desmontarBienvenida();
+      tour.desmontar();
+    },
+  };
 }
 
 // Recuadros «Temario» y «Test» de un módulo dentro del recorrido.
