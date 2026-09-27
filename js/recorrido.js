@@ -11,7 +11,8 @@
 //   inercia del anterior no cuenta).
 // - Mientras se reproduce, un aviso arriba dice cuál es el módulo siguiente; en el cuarto, al
 //   acabar su escena, dice «Sigue bajando» y la página sigue con normalidad.
-// - De la escena de natación solo se reproduce el principio (PARTE), para que no se haga larga.
+// - De la escena de natación solo se usa el principio (3,5 s del vídeo), para que no se haga
+//   larga: se corta al sacar los fotogramas (scripts/recorrido-fotogramas.sh).
 // - Hacia arriba, cada gesto vuelve un módulo (a su principio, sin vídeo) y desde el primero
 //   se sale por arriba.
 // Dentro de la sección la página no se mueve (ni da saltos de un módulo a otro): solo
@@ -21,8 +22,10 @@
 //
 // Técnica: la misma que la intro (js/intro.js), fotogramas dibujados en un <canvas>; un
 // <video> no siempre arranca solo en el móvil y las imágenes sí.
-// - Cada escena son FOTOGRAMAS[e] imágenes, 20 por segundo de vídeo (AVIF, o WebP si el
-//   navegador no tiene AVIF); a esta velocidad basta uno de cada PASO. Se empiezan a
+// - Cada escena son FOTOGRAMAS[e] imágenes, 10 por segundo de vídeo (a esta velocidad, con la
+//   mezcla entre dos, se ve fluido), en AVIF (o WebP si el navegador no lo tiene) a la
+//   resolución del vídeo original (1912 px) y con calidad alta; con datos lentos o ahorro de
+//   datos, a 1280 px. Se empiezan a
 //   descargar en cuanto se abre la portada (tras la intro): primero el principio de cada
 //   escena y luego cada escena entera, en orden y antes la del módulo en el que se está.
 // - El avance lo marca el reloj (dura siempre lo mismo aunque el móvil vaya justo) y entre
@@ -37,14 +40,13 @@
 //
 // Para cambiar las escenas: scripts/recorrido-fotogramas.sh (y subir la versión de RUTA).
 
-const RUTA = 'assets/recorrido/v3'; // cambiar la versión al cambiar los fotogramas
+const RUTA = 'assets/recorrido/v4'; // cambiar la versión al cambiar los fotogramas
 const ESCENAS = 4;
-const FOTOGRAMAS = [100, 100, 50, 100]; // por escena (20 por segundo; la 3 dura 2,5 s)
-const FPS = 20;
+const FOTOGRAMAS = [35, 50, 25, 50]; // por escena (10 por segundo: 3,5 s, 5 s, 2,5 s y 5 s)
+const FPS = 10;
 const VELOCIDAD = 2.5; // cuánto más rápida que el vídeo va la escena (5 s → 2 s)
-const PARTE = [0.7, 1, 1, 1]; // parte de cada escena que se reproduce (la de natación se hacía larga)
 const AVISO_DESDE = 0.3; // desde qué parte de la escena se avisa del módulo siguiente
-const PASO = 2; // fotogramas que se usan: uno de cada PASO (a esta velocidad sobran los demás)
+const PASO = 1; // fotogramas que se usan: uno de cada PASO (ya se sacan solo los que hacen falta)
 const ENFOQUE = [0.47, 0.47, 0.47, 0.5]; // x del socorrista (0-1) en cada escena
 const FUNDIDO = 350; // ms del fundido entre escenas
 const SOLAPE = 150; // ms antes del final de la escena en los que empieza a fundirse
@@ -75,7 +77,7 @@ export function montarRecorrido(raiz) {
   // Los fotogramas que se usan de cada escena: uno de cada PASO, y el último.
   const usados = FOTOGRAMAS.map((n) => [...new Set([...Array.from({ length: Math.ceil(n / PASO) }, (_, i) => i * PASO), n - 1])]);
   let formato = 'avif';
-  let ancho = 960;
+  let ancho = 1280;
   let cola = null; // fotogramas pendientes de pedir, en orden: [escena, fotograma]
 
   // Dónde se está: 'arriba' (antes de la sección), 'dentro' o 'abajo' (ya pasada).
@@ -156,7 +158,9 @@ export function montarRecorrido(raiz) {
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     const conexion = navigator.connection;
     const lenta = conexion && (conexion.saveData || /2g|3g/.test(conexion.effectiveType ?? ''));
-    ancho = lienzo.clientWidth * dpr > 1100 && !lenta ? 1440 : 960;
+    // El ancho de imagen que pide la pantalla con el encuadre «cubrir» (en vertical manda el alto).
+    const pide = Math.max(lienzo.clientWidth, lienzo.clientHeight * 16 / 9) * dpr;
+    ancho = pide > 1300 && !lenta ? 1912 : 1280;
 
     cola = ordenDeCarga();
     const [e0, f0] = cola.shift();
@@ -235,7 +239,7 @@ export function montarRecorrido(raiz) {
   function momento(ahora) {
     if (reproduccion) {
       const { n, reloj: pasado, dur } = reproduccion;
-      const t = Math.min(1, pasado / dur) * PARTE[n];
+      const t = Math.min(1, pasado / dur);
       const ultima = n === ESCENAS - 1;
       const mezcla = ultima ? 0 : Math.min(1, Math.max(0, (pasado - dur + SOLAPE) / FUNDIDO));
       return { a: { e: n, t }, b: ultima ? null : { e: n + 1, t: 0 }, mezcla, acabada: ultima ? pasado >= dur : mezcla >= 1, avance: Math.min(1, pasado / dur) };
@@ -299,7 +303,7 @@ export function montarRecorrido(raiz) {
       const r = reproduccion;
       const dt = Math.min(64, Math.max(0, ahora - r.ultimo));
       r.ultimo = ahora;
-      const tope = r.reloj >= r.dur ? Infinity : Math.min(1, listo(r.n) / PARTE[r.n]) * r.dur;
+      const tope = r.reloj >= r.dur ? Infinity : listo(r.n) * r.dur;
       r.reloj = Math.max(r.reloj, Math.min(r.reloj + dt, tope));
     }
     const m = pintar(ahora);
@@ -334,7 +338,7 @@ export function montarRecorrido(raiz) {
     const n = modulo;
     fundido = null;
     vista = { e: n, t: 0 };
-    reproduccion = { n, reloj: 0, ultimo: performance.now(), dur: (FOTOGRAMAS[n] * PARTE[n] / FPS) * 1000 / VELOCIDAD };
+    reproduccion = { n, reloj: 0, ultimo: performance.now(), dur: (FOTOGRAMAS[n] / FPS) * 1000 / VELOCIDAD };
     adelantarEscena(n);
     animar();
   }
@@ -352,7 +356,7 @@ export function montarRecorrido(raiz) {
       adelantarEscena(modulo);
     } else {
       completados = ESCENAS;
-      vista = { e: n, t: PARTE[n] };
+      vista = { e: n, t: 1 };
       // Para soltar la sección no se mueve la página (en Safari, ese salto se veía como un
       // fogonazo): se quita el espacio de sobra de debajo, que no se ve, y el fin pasa a ser
       // donde ya está la página.

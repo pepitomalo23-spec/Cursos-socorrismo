@@ -1,38 +1,20 @@
-// Portada: presentación de la escuela, recorrido por los módulos (con el acceso al temario y
-// al test de cada uno) y contacto. Es también la pantalla de «Mis cursos» del alumno.
+// Portada: la bienvenida (el logo que vuela a la cabecera; js/bienvenida.js) y, debajo, sin
+// sesión, el recuadro para entrar o crear cuenta; con sesión, un inicio con tarjetas que
+// llevan a cada apartado (Temario y test, Mis notas, Administración…). Después, el contacto.
 
 import { ESCUELA } from '../config.js';
 import * as almacen from '../almacen.js';
 import * as sesion from '../sesion.js';
 import { resumen } from '../estadisticas.js';
-import { emblemaCurso, esc, estiloCurso, etiquetaModulo, icono, nota, plural, titulo } from '../utiles.js';
-import { montarRecorrido } from '../recorrido.js';
+import { emblemaCurso, esc, estiloCurso, icono, nota, plural, titulo } from '../utiles.js';
 import { bienvenidaVista, montarBienvenida } from '../bienvenida.js';
-
-// Textos del recorrido si falta algún módulo en los datos.
-const MODULOS_BASE = ['Natación', 'Prevención de accidentes en instalaciones acuáticas', 'Rescate de accidentados en instalaciones acuáticas', 'Primeros auxilios'];
-// Nombres cortos para los botones de ir directo a un módulo.
-const MODULOS_CORTOS = ['Natación', 'Prevención', 'Rescate', 'Primeros auxilios'];
+import { formularioAcceso } from './acceso.js';
 
 export async function render(el) {
   titulo('');
-  const cursos = await almacen.cursos();
   const u = sesion.usuario();
-  const intentos = u ? await almacen.intentos({ usuarioId: u.id }) : [];
-  const recorrido = await Promise.all(MODULOS_BASE.map(async (nombre, i) => {
-    const curso = cursos.find((c) => Number(c.modulo) === i + 1);
-    return {
-      curso,
-      titulo: curso?.titulo ?? nombre,
-      descripcion: curso?.descripcion ?? '',
-      temas: curso ? (await almacen.temas(curso.id)).length : 0,
-      // Sin sesión se enlaza igual: al pulsar se pide entrar y luego se vuelve aquí.
-      abierto: !u || sesion.esAdmin() || (curso && u.cursos.includes(curso.id)),
-      tests: curso ? resumen(intentos.filter((x) => x.cursoId === curso.id)) : null,
-    };
-  }));
-
   const conBienvenida = !bienvenidaVista();
+
   el.innerHTML = `
     <section class="portada" ${conBienvenida ? '' : 'hidden'}>
       <div class="portada-logo" aria-hidden="true">
@@ -47,81 +29,17 @@ export async function render(el) {
         <h1 class="portada-titulo">${u ? `Hola, ${esc(u.nombre.split(' ')[0])}` : 'Bienvenido'}</h1>
         <p class="portada-lema">${esc(ESCUELA.lema)}</p>
       </div>
-      <a class="portada-deslizar" href="#recorrido" data-desplazar="recorrido">
-        <span>${u ? 'Desliza para ver tus módulos' : 'Desliza para empezar'}</span>
+      <a class="portada-deslizar" href="#inicio-contenido" data-desplazar>
+        <span>Desliza para empezar</span>
         <span class="portada-deslizar-flecha" aria-hidden="true"></span>
       </a>
     </section>
 
-    <nav class="saltos-modulo" aria-label="Ir directo a un módulo">
-      <p class="saltos-titulo">¿Con prisa? Ve directo a un módulo</p>
-      <div class="saltos-lista">
-        ${recorrido.map((m, i) => {
-          const [color, ico] = estiloCurso(i);
-          return `
-            <a class="salto-modulo color-${color}" href="#recorrido" data-modulo="${i}">
-              <span class="salto-icono">${m.curso ? emblemaCurso(m.curso, ico) : icono(ico)}</span>
-              <span class="salto-texto"><span>Módulo ${i + 1}</span><strong>${MODULOS_CORTOS[i]}</strong></span>
-            </a>`;
-        }).join('')}
-      </div>
-    </nav>
-
-    <section class="recorrido" id="recorrido" aria-label="Los cuatro módulos del curso">
-      <div class="recorrido-fijo">
-        <canvas class="recorrido-lienzo" aria-hidden="true"></canvas>
-        <div class="recorrido-textos">
-          ${recorrido.map((m, i) => `
-            <div class="recorrido-paso color-${estiloCurso(i)[0]}" data-corto="${MODULOS_CORTOS[i]}">
-              <span class="recorrido-etiqueta">Módulo ${i + 1}</span>
-              <h2>${esc(m.titulo)}</h2>
-              ${m.descripcion ? `<p>${esc(m.descripcion)}</p>` : ''}
-              ${m.curso ? accesos(m, estiloCurso(i)[1]) : ''}
-            </div>`).join('')}
-          <div class="recorrido-progreso" aria-hidden="true">${recorrido.map(() => '<span></span>').join('')}</div>
-        </div>
-        <p class="recorrido-siguiente" aria-hidden="true"><span></span></p>
-      </div>
+    <section class="contenedor inicio-contenido" id="inicio-contenido">
+      ${u ? await tarjetas(u) : registro()}
     </section>
 
     <section class="contenedor">
-      <div class="seccion-fila"><h2>Todo el curso en un solo sitio</h2></div>
-      <div class="modos">
-        <div class="modo color-morado">
-          <span class="modo-emblema">${icono('libro')}</span>
-          <span class="modo-nombre">Temario</span>
-          <span class="modo-sub">Cada tema con su explicación, PDF y vídeos</span>
-        </div>
-        <div class="modo color-coral">
-          <span class="modo-emblema">${icono('test')}</span>
-          <span class="modo-nombre">Tests</span>
-          <span class="modo-sub">Por tema o de todo el curso, con corrección</span>
-        </div>
-        <div class="modo color-teal">
-          <span class="modo-emblema">${icono('grafica')}</span>
-          <span class="modo-nombre">Notas</span>
-          <span class="modo-sub">Tu media y tus aciertos por tema</span>
-        </div>
-      </div>
-
-      <div class="seccion-fila" id="cursos"><h2>Módulos</h2></div>
-      ${cursos.length ? `
-        <div class="lista-cursos">
-          ${cursos.map((c, i) => {
-            const [color, ico] = estiloCurso(i);
-            return `
-              <article class="curso-fila color-${color}">
-                <span class="curso-emblema">${emblemaCurso(c, ico)}</span>
-                <div class="curso-texto">
-                  ${c.modulo ? `<span class="curso-etiqueta">${esc(etiquetaModulo(c))}</span>` : ''}
-                  <h3>${esc(c.titulo)}</h3>
-                  <p>${esc(c.descripcion)}</p>
-                </div>
-                ${c.horas ? `<span class="curso-horas">${esc(c.horas)} h</span>` : ''}
-              </article>`;
-          }).join('')}
-        </div>` : '<p class="vacio">Pronto publicaremos los próximos cursos.</p>'}
-
       <div class="seccion-fila"><h2>Contacto</h2></div>
       <div class="contacto">
         <p>¿Quieres apuntarte? Escríbenos o llámanos y te contamos las próximas fechas.</p>
@@ -132,37 +50,86 @@ export async function render(el) {
       </div>
     </section>`;
 
+  if (!u) formularioAcceso(el.querySelector('.inicio-formulario'), { modo: 'entrar' });
   const desmontarBienvenida = conBienvenida ? montarBienvenida(el.querySelector('.portada')) : () => {};
-  const tour = montarRecorrido(el.querySelector('.recorrido'));
-  el.querySelectorAll('[data-modulo]').forEach((boton) => boton.addEventListener('click', (e) => {
-    e.preventDefault();
-    tour.irA(Number(e.currentTarget.dataset.modulo));
-  }));
 
-  // «Desliza para empezar» baja al primer módulo del recorrido sin cambiar la dirección.
+  // «Desliza para empezar» baja hasta el recuadro de acceso (o las tarjetas).
   el.querySelector('[data-desplazar]')?.addEventListener('click', (e) => {
     e.preventDefault();
-    tour.irA(0);
+    const destino = el.querySelector('#inicio-contenido');
+    const arriba = document.querySelector('.cabecera')?.offsetHeight ?? 0;
+    scrollTo({ top: destino.getBoundingClientRect().top + scrollY - arriba, behavior: 'smooth' });
   });
 
-  // Al salir de la portada, la cabecera vuelve a ser la de siempre y el scroll, el normal.
-  return {
-    alSalir: () => {
-      desmontarBienvenida();
-      tour.desmontar();
-    },
-  };
+  // Al salir de la portada, la cabecera vuelve a ser la de siempre.
+  return { alSalir: () => desmontarBienvenida() };
 }
 
-// Recuadros «Temario» y «Test» de un módulo dentro del recorrido.
-function accesos(m, iconoLinea) {
-  const id = encodeURIComponent(m.curso.id);
-  const recuadro = (href, simbolo, nombre, detalle) => m.abierto
-    ? `<a class="recorrido-acceso" href="${href}"><span class="recorrido-acceso-icono">${simbolo}</span><span class="recorrido-acceso-texto"><strong>${nombre}</strong><span>${detalle}</span></span></a>`
-    : `<span class="recorrido-acceso bloqueado"><span class="recorrido-acceso-icono">${icono('candado')}</span><span class="recorrido-acceso-texto"><strong>${nombre}</strong><span>Sin acceso</span></span></span>`;
+// Sin sesión: qué hay en la escuela y el recuadro para entrar o crear cuenta.
+function registro() {
   return `
-    <div class="recorrido-accesos">
-      ${recuadro(`#/curso/${id}`, emblemaCurso(m.curso, iconoLinea), 'Temario', plural(m.temas, 'tema', 'temas'))}
-      ${recuadro(`#/test?curso=${id}`, icono('test'), 'Test', m.tests?.tests ? `Media <b>${nota(m.tests.media)}</b>` : 'Tipo examen')}
+    <div class="inicio-registro">
+      <div class="inicio-formulario"></div>
+      <div class="inicio-presentacion">
+        <p class="antetitulo">Curso de socorrista</p>
+        <h2>Tu formación, en tu móvil</h2>
+        <ul class="inicio-ventajas">
+          <li>${icono('libro')}<span><strong>Temario</strong> de los cuatro módulos, con explicaciones, PDF y vídeos</span></li>
+          <li>${icono('test')}<span><strong>Tests</strong> por tema o de todo el módulo, con corrección al momento</span></li>
+          <li>${icono('grafica')}<span><strong>Notas</strong>: tu media y tus aciertos por tema</span></li>
+        </ul>
+        <a class="inicio-ver" href="#/temario">Ver el temario y test ${icono('flecha')}</a>
+      </div>
+    </div>`;
+}
+
+// Con sesión: una tarjeta por apartado del menú, con lo más útil de cada uno a la vista.
+async function tarjetas(u) {
+  const cursos = await almacen.cursos();
+  const intentos = await almacen.intentos({ usuarioId: u.id });
+  const r = resumen(intentos);
+  const ultimo = intentos[0];
+  const todos = cursos.filter((c) => c.modulo);
+  const mios = todos.filter((c) => sesion.esAdmin() || u.cursos.includes(c.id));
+
+  return `
+    <h2 class="inicio-pregunta">¿Qué quieres hacer hoy?</h2>
+    <div class="inicio-tarjetas">
+      <a class="inicio-tarjeta grande" href="#/temario">
+        <span class="inicio-tarjeta-emblemas">
+          ${todos.map((c, i) => `<span class="color-${estiloCurso(i)[0]}">${emblemaCurso(c, estiloCurso(i)[1])}</span>`).join('')}
+        </span>
+        <span class="inicio-tarjeta-texto">
+          <strong>Temario y test</strong>
+          <span>${mios.length ? `${plural(mios.length, 'módulo', 'módulos')} con sus temas, vídeos y tests` : 'Los cuatro módulos del curso (la escuela te dará acceso)'}</span>
+        </span>
+        <span class="inicio-tarjeta-flecha">${icono('flecha')}</span>
+      </a>
+      <a class="inicio-tarjeta color-teal" href="#/notas">
+        <span class="inicio-tarjeta-icono">${icono('grafica')}</span>
+        <span class="inicio-tarjeta-texto">
+          <strong>Mis notas</strong>
+          <span>${r.tests ? `${plural(r.tests, 'test', 'tests')} · media <b>${nota(r.media)}</b>` : 'Aún no has hecho ningún test'}</span>
+        </span>
+        <span class="inicio-tarjeta-flecha">${icono('flecha')}</span>
+      </a>
+      ${ultimo ? `
+        <a class="inicio-tarjeta color-coral" href="#/intento/${esc(ultimo.id)}">
+          <span class="inicio-tarjeta-icono">${icono('test')}</span>
+          <span class="inicio-tarjeta-texto">
+            <strong>Tu último test</strong>
+            <span>${esc(ultimo.temaTitulos.length === 1 ? ultimo.temaTitulos[0] : ultimo.cursoTitulo)} · <b>${nota(ultimo.nota)}</b></span>
+          </span>
+          <span class="inicio-tarjeta-flecha">${icono('flecha')}</span>
+        </a>` : ''}
+      ${sesion.esAdmin() ? `
+        <a class="inicio-tarjeta color-morado" href="#/admin">
+          <span class="inicio-tarjeta-icono">${icono('ajustes')}</span>
+          <span class="inicio-tarjeta-texto">
+            <strong>Administración</strong>
+            <span>Cursos, temario, alumnos y notas</span>
+          </span>
+          <span class="inicio-tarjeta-flecha">${icono('flecha')}</span>
+        </a>` : ''}
     </div>`;
 }

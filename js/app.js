@@ -11,6 +11,7 @@ import { esc, icono, pantallaVacia, titulo } from './utiles.js';
 
 import * as inicio from './vistas/inicio.js';
 import * as acceso from './vistas/acceso.js';
+import * as temario from './vistas/temario.js';
 import * as curso from './vistas/curso.js';
 import * as tema from './vistas/tema.js';
 import * as test from './vistas/test.js';
@@ -22,6 +23,7 @@ import * as admin from './vistas/admin.js';
 const RUTAS = [
   ['/', inicio, null],
   ['/acceso', acceso, null],
+  ['/temario', temario, null],
   ['/curso/:id', curso, 'usuario'],
   ['/tema/:id', tema, 'usuario'],
   ['/test', test, 'usuario'],
@@ -71,9 +73,9 @@ async function mostrar() {
   vistaActual = null;
   hashActual = location.hash;
 
-  // «Mis cursos» es ahora la portada (el recorrido por los módulos); #/panel queda como alias.
+  // El antiguo «Mis cursos» (#/panel) es ahora «Temario y test».
   if (/^#\/panel(\?|$)/.test(location.hash)) {
-    location.replace('#/');
+    location.replace('#/temario');
     return;
   }
   const { ruta, params, query, camino } = resolver(location.hash);
@@ -116,12 +118,14 @@ function pintarCabecera(camino) {
   const u = sesion.usuario();
   const enlaces = u
     ? [
-      ['#/', 'Mis cursos', 'libro'],
+      ['#/', 'Inicio', 'casa'],
+      ['#/temario', 'Temario y test', 'libro'],
       ['#/notas', 'Mis notas', 'grafica'],
       ...(sesion.esAdmin() ? [['#/admin', 'Administración', 'ajustes']] : []),
     ]
     : [
       ['#/', 'Inicio', 'casa'],
+      ['#/temario', 'Temario y test', 'libro'],
       ['#/acceso', 'Acceso alumnos', 'usuario'],
     ];
   const activo = (href) => {

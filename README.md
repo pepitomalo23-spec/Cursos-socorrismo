@@ -55,7 +55,8 @@ js/datos-demo.js        cursos, temas, preguntas y alumnos de ejemplo
 js/estadisticas.js      medias y aciertos por tema
 js/utiles.js            utilidades comunes (escapar HTML, formato de notas, iconos…)
 js/vistas/              una pantalla por archivo
-  inicio.js             portada: presentación, recorrido por los módulos («Mis cursos») y contacto
+  inicio.js             portada: bienvenida y, debajo, el acceso (sin sesión) o tarjetas a cada apartado
+  temario.js            «Temario y test»: el recorrido por los 4 módulos con sus vídeos, y la lista
   acceso.js             inicio de sesión y crear cuenta
   curso.js              temario de un curso
   tema.js               un tema
@@ -97,11 +98,18 @@ y ejecutar `scripts/intro-fotogramas.sh fuentes/nuevo.mp4 v2`; después cambiar 
 
 ## Bienvenida (portada)
 
+Debajo de la bienvenida, sin sesión, está el recuadro para entrar o crear cuenta (el mismo
+formulario que la pantalla de acceso, `formularioAcceso` en `js/vistas/acceso.js`) junto a lo
+que ofrece la escuela; con sesión, un inicio con tarjetas a cada apartado del menú (Temario y
+test con los iconos de los módulos, Mis notas con la media, el último test y, para la
+escuela, Administración). Después, el contacto.
+
 Sale una vez por visita: en cuanto se pasa (la portada ya no se ve y el scroll se ha parado),
 se quita sin que se mueva nada en pantalla y ya no se puede volver a ella; arriba del todo
-quedan los botones de los módulos, también al volver a la portada desde otra pantalla (se
-recuerda en `sessionStorage`). Si se para bajando con el logo ya en su sitio pero aún asoma
-un trozo, termina de bajar sola hasta los botones. La copia difuminada del logo va en una
+queda el recuadro de acceso o las tarjetas, también al volver a la portada desde otra
+pantalla (se recuerda en `sessionStorage`). La primera vez que se para bajando con el logo ya
+en su sitio, se coloca justo en el recuadro (termina de bajar o, si la inercia se ha pasado un
+poco, sube lo que sobra). La copia difuminada del logo va en una
 caja con margen, porque Safari recorta el desenfoque en el borde de la capa.
 
 Lo primero que se ve (tras la intro) es «Bienvenido» (o «Hola, nombre» con sesión) sobre el
@@ -117,16 +125,14 @@ arranca y se posa frenando, y al llegar el de la cabecera toma su sitio en el mi
 fotograma. Con «reducir movimiento» el logo se queda quieto de fondo y la cabecera se ve
 desde el principio.
 
-Justo antes del recorrido hay cuatro botones («¿Con prisa? Ve directo a un módulo») que
-bajan directamente a cada módulo del recorrido.
+## Temario y test: recorrido por los módulos
 
-## Recorrido por los módulos (portada)
-
-Bajo la presentación de la portada, un socorrista recorre los cuatro módulos en la misma
+Apartado propio del menú (`#/temario`; el antiguo `#/panel` lleva aquí). Arriba, cuatro
+botones («¿Con prisa? Ve directo a un módulo») que bajan a cada módulo del recorrido; debajo,
+el recorrido y la lista de módulos. En el recorrido, un socorrista recorre los cuatro módulos en la misma
 playa: nada (1), vigila con el silbato (2), entra al agua con el tubo de rescate (3) y hace
 una RCP con el DESA (4). Al lado aparece el módulo (título y descripción, sacados de los
-datos) con dos recuadros, «Temario» y «Test», que llevan a ese módulo. La portada es también
-«Mis cursos» del alumno (ya no hay panel aparte; `#/panel` lleva a la portada): sin sesión,
+datos) con dos recuadros, «Temario» y «Test», que llevan a ese módulo: sin sesión,
 los recuadros piden entrar; con sesión, enseñan los temas y la media, o «Sin acceso» si el
 alumno no está matriculado en ese módulo.
 
@@ -140,17 +146,20 @@ alumno no está matriculado en ese módulo.
   saltos (solo cambian la escena y el texto), y los gestos solo se interceptan ahí (fuera, el
   scroll es el del navegador). «Desliza para empezar» y «Ve directo a un módulo» llevan a su
   módulo.
-- De la escena de natación solo se reproduce el principio (`PARTE`: 70 %, 1,4 s), para que no
-  se haga larga. Mientras se reproduce una escena, un aviso arriba dice cuál viene («Siguiente:
+- De la escena de natación solo se usa el principio (3,5 s del vídeo: 1,4 s en pantalla), para
+  que no se haga larga. Mientras se reproduce una escena, un aviso arriba dice cuál viene («Siguiente:
   Módulo 2 · Prevención»); al acabar la cuarta, «Sigue bajando».
 - Fluidez: el avance lo marca el reloj y entre dos fotogramas se dibuja la mezcla de ambos; a
-  esta velocidad basta uno de cada dos (10 por segundo de vídeo). Nunca se salta un fotograma
+  esta velocidad bastan 10 por segundo de vídeo. Nunca se salta un fotograma
   que no ha llegado: si falta, la escena espera en el último (sin fogonazos). Al final, la
   escena se funde con el principio de la siguiente. El lienzo solo se dibuja si está a la
   vista y algo ha cambiado, y nunca a más resolución que la de los fotogramas.
-- Misma técnica que la intro: fotogramas en `<canvas>`. 350 fotogramas en
-  `assets/recorrido/v3/`, AVIF (WebP de respaldo), a 960 px (móviles, ~6,7 MB en total) y
-  1440 px (pantallas grandes, ~12 MB); se usa la mitad. Se descargan en cuanto se abre la
+- Misma técnica que la intro: fotogramas en `<canvas>`. 160 fotogramas en
+  `assets/recorrido/v4/`, sacados de los vídeos originales (`fuentes/recorrido/`, sin
+  recomprimir), en AVIF con calidad alta (WebP de respaldo): a 1912 px, la resolución del
+  vídeo, prácticamente iguales que él; y a 1280 px, solo con datos lentos o ahorro de datos.
+  Se elige por lo que ocupa la escena en pantalla (en el móvil en vertical manda el alto, así
+  que también usa los de 1912). Se descargan en cuanto se abre la
   portada (tras la intro, para no quitarle red): primero el principio de cada escena y luego
   cada escena entera, en orden y antes la del módulo en el que se está.
 - Horizontal: la escena llena el hueco con el texto encima, a la izquierda. Vertical: el

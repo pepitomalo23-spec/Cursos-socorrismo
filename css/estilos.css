@@ -416,29 +416,6 @@ svg { display: block; }
 .color-azul { --c: var(--blue); }
 .color-ambar { --c: var(--amber); }
 
-/* Tarjetas grandes con icono (como los tipos de test de pj.fire). */
-.modos { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; }
-@media (max-width: 640px) { .modos { grid-template-columns: repeat(2, 1fr); } }
-.modo {
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
-  min-height: 130px;
-  padding: 18px 17px;
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  background: var(--card);
-  color: var(--text);
-  text-align: left;
-  text-decoration: none !important;
-  box-shadow: inset 0 0 0 1px var(--w03);
-  transition: border-color 0.15s, background 0.15s, transform 0.15s;
-}
-.modo-emblema { display: block; color: var(--c, var(--purple)); transition: transform 0.15s; }
-.modo-emblema .icono { width: 38px; height: 38px; stroke-width: 1.7; }
-.modo-nombre { display: block; margin-top: 16px; font-family: var(--title); font-size: 15.5px; letter-spacing: 0.2px; line-height: 1.25; }
-.modo-sub { display: block; margin-top: auto; padding-top: 6px; color: var(--muted); font-size: 11.5px; line-height: 1.4; }
-.modo-sub b { color: var(--text); font-family: var(--mono); font-weight: 700; }
 
 .vacio {
   margin: 0;
@@ -1134,7 +1111,7 @@ legend { margin-bottom: 8px; padding: 0; color: var(--muted-2); font-size: 11px;
 
 .acceso { display: flex; justify-content: center; padding: 24px 16px; }
 .panel-acceso { width: 100%; max-width: 380px; padding: 30px 26px 26px; border: 1px solid var(--line); border-radius: 18px; background: var(--card); }
-.acceso-titulo { margin-bottom: 8px; font-size: 26px; }
+.acceso-titulo { margin: 0 0 8px; font-family: var(--title); font-size: 26px; font-weight: 400; letter-spacing: 0.3px; line-height: 1.2; }
 .acceso-sub { margin-bottom: 24px; color: var(--muted); font-size: 13.5px; line-height: 1.5; }
 .acceso-campo { margin-bottom: 10px; }
 .acceso-error { min-height: 16px; margin: 4px 0 6px; color: var(--coral); font-size: 12.5px; line-height: 1.5; }
@@ -1143,6 +1120,85 @@ legend { margin-bottom: 8px; padding: 0; color: var(--muted-2); font-size: 11px;
 .acceso-separador::before, .acceso-separador::after { content: ''; flex: 1; height: 1px; background: var(--line); }
 .acceso-demo { color: var(--muted); font-size: 12.5px; line-height: 1.6; text-align: center; }
 .acceso-demo .enlace { font-family: var(--mono); font-size: 12px; }
+
+/* ---------- Portada: debajo de la bienvenida (js/vistas/inicio.js) ---------- */
+
+.inicio-contenido { padding-top: 28px; padding-bottom: 8px; }
+
+/* Sin sesión: el recuadro de acceso y, al lado (debajo en el móvil), qué ofrece la escuela. */
+.inicio-registro { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 48px; align-items: center; }
+.inicio-formulario { display: flex; justify-content: center; order: 2; }
+.inicio-formulario .panel-acceso { max-width: 400px; }
+.inicio-presentacion { order: 1; }
+.inicio-presentacion h2 { margin: 0 0 22px; font-family: var(--title); font-size: clamp(30px, 4vw, 44px); font-weight: 400; line-height: 1.05; letter-spacing: 0.3px; text-transform: uppercase; }
+.inicio-ventajas { display: flex; flex-direction: column; gap: 14px; margin: 0 0 26px; padding: 0; list-style: none; }
+.inicio-ventajas li { display: flex; align-items: flex-start; gap: 12px; color: var(--muted); font-size: 14.5px; line-height: 1.5; }
+.inicio-ventajas strong { color: var(--text); }
+.inicio-ventajas .icono { flex-shrink: 0; width: 20px; height: 20px; margin-top: 1px; color: var(--coral); }
+.inicio-ver { display: inline-flex; align-items: center; gap: 8px; color: var(--text); font-weight: 600; font-size: 14px; text-decoration: none !important; }
+.inicio-ver .icono { width: 16px; height: 16px; color: var(--coral); transition: transform 0.15s; }
+.inicio-ver:hover .icono { transform: translateX(3px); }
+
+/* Con sesión: una tarjeta grande por apartado. */
+.inicio-contenido > .inicio-pregunta { margin: 0 0 16px; color: var(--text); white-space: normal; font-family: var(--title); font-size: clamp(26px, 3.4vw, 36px); font-weight: 400; letter-spacing: 0.3px; text-transform: uppercase; }
+.inicio-tarjetas { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.inicio-tarjeta {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-height: 108px;
+  padding: 20px 20px 20px 22px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--card);
+  color: var(--text);
+  text-decoration: none !important;
+  transition: border-color 0.15s, background 0.15s, transform 0.15s;
+}
+.inicio-tarjeta::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(120% 140% at 0% 0%, color-mix(in srgb, var(--c, var(--coral)) 16%, transparent), transparent 60%);
+  pointer-events: none;
+}
+.inicio-tarjeta:hover { border-color: var(--c, var(--coral)); background: var(--card-hi); transform: translateY(-2px); }
+.inicio-tarjeta.grande { grid-column: 1 / -1; min-height: 150px; padding: 24px 24px 24px 26px; }
+.inicio-tarjeta-icono { position: relative; display: grid; place-items: center; flex-shrink: 0; width: 52px; height: 52px; border-radius: 14px; background: color-mix(in srgb, var(--c, var(--coral)) 14%, transparent); color: var(--c, var(--coral)); }
+.inicio-tarjeta-icono .icono { width: 26px; height: 26px; }
+.inicio-tarjeta-emblemas { position: relative; display: flex; flex-shrink: 0; gap: 6px; }
+.inicio-tarjeta-emblemas > span { display: grid; place-items: center; width: 52px; height: 52px; border-radius: 14px; background: color-mix(in srgb, var(--c) 14%, transparent); color: var(--c); }
+.inicio-tarjeta-emblemas .glifo-modulo { width: 34px; height: 34px; }
+.inicio-tarjeta-emblemas .icono { width: 24px; height: 24px; }
+.inicio-tarjeta-texto { position: relative; display: flex; flex: 1; flex-direction: column; gap: 4px; min-width: 0; }
+.inicio-tarjeta-texto strong { font-family: var(--title); font-size: 22px; font-weight: 400; letter-spacing: 0.3px; line-height: 1.1; text-transform: uppercase; }
+.inicio-tarjeta.grande .inicio-tarjeta-texto strong { font-size: 30px; }
+.inicio-tarjeta-texto span { color: var(--muted); font-size: 13.5px; line-height: 1.45; }
+.inicio-tarjeta-texto b { color: var(--text); font-family: var(--mono); }
+.inicio-tarjeta-flecha { position: relative; flex-shrink: 0; color: var(--muted-2); transition: transform 0.15s, color 0.15s; }
+.inicio-tarjeta-flecha .icono { width: 20px; height: 20px; }
+.inicio-tarjeta:hover .inicio-tarjeta-flecha { color: var(--c, var(--coral)); transform: translateX(3px); }
+
+.temario-cabeza { padding-bottom: 6px; }
+.temario-cabeza h1 { margin-bottom: 6px; font-size: clamp(28px, 4vw, 40px); text-transform: uppercase; }
+.temario-cabeza p { max-width: 60ch; margin: 0; font-size: 14px; }
+
+@media (max-width: 760px) {
+  .inicio-registro { grid-template-columns: minmax(0, 1fr); gap: 32px; }
+  .inicio-formulario { order: 1; }
+  .inicio-presentacion { order: 2; }
+  .inicio-tarjetas { grid-template-columns: minmax(0, 1fr); }
+  .inicio-tarjeta.grande { flex-wrap: wrap; }
+  .inicio-tarjeta.grande .inicio-tarjeta-emblemas { width: 100%; }
+  .inicio-tarjeta.grande .inicio-tarjeta-texto strong { font-size: 26px; }
+  .inicio-tarjeta.grande .inicio-tarjeta-flecha { position: absolute; top: 24px; right: 22px; }
+}
+@media (max-width: 380px) {
+  .inicio-tarjeta-emblemas > span { width: 44px; height: 44px; }
+  .inicio-tarjeta-emblemas .glifo-modulo { width: 30px; height: 30px; }
+}
 
 /* ---------- Test en curso ---------- */
 

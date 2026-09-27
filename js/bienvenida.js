@@ -188,17 +188,22 @@ function vigilarPlegado(portada, cabecera, alPlegar) {
   let activo = true;
   let ultimoY = scrollY;
   let bajando = false;
+  let ajustado = false;
 
   function intentar() {
     if (!activo || tocando) return;
     if (!portada.isConnected) { parar(); return; }
     const falta = portada.getBoundingClientRect().bottom - cabecera.getBoundingClientRect().bottom;
-    if (falta > 1) {
-      // Si se ha parado bajando con el logo ya en su sitio pero aún asoma un trozo de la
-      // bienvenida, termina de bajar hasta los botones (y al acabar, se quita).
-      if (bajando && scrollY >= portada.offsetHeight * VUELO - 1) scrollBy({ top: falta, behavior: 'smooth' });
+    // La primera vez que se para bajando con el logo ya en su sitio, se coloca justo en lo que
+    // viene después (el recuadro de acceso o las tarjetas): si aún asoma un trozo de la
+    // bienvenida, termina de bajar; si la inercia se ha pasado un poco, sube lo que sobra.
+    if (!ajustado && bajando && scrollY >= portada.offsetHeight * VUELO - 1
+      && Math.abs(falta) > 1 && falta > -innerHeight * 0.4) {
+      ajustado = true;
+      scrollBy({ top: falta, behavior: 'smooth' });
       return;
     }
+    if (falta > 1) return;
     const siguiente = portada.nextElementSibling;
     const antes = siguiente?.getBoundingClientRect().top ?? 0;
     alPlegar();
@@ -220,6 +225,8 @@ function vigilarPlegado(portada, cabecera, alPlegar) {
   const alSoltar = (e) => {
     if (e.touches.length) return;
     tocando = false;
+    // Al soltar, la página aún se mueve por la inercia: con scrollend se espera a que pare.
+    if ('onscrollend' in window) return;
     clearTimeout(temporizador);
     temporizador = setTimeout(intentar, QUIETO);
   };
