@@ -9,7 +9,9 @@
 //   rápida que el vídeo (VELOCIDAD: 2 s), y termina en el principio de la siguiente, ya con
 //   su módulo. Mientras se reproduce no se mueve nada; para seguir hace falta otro gesto (la
 //   inercia del anterior no cuenta).
-// - En el cuarto, al acabar su escena, la página sigue con normalidad.
+// - Mientras se reproduce, un aviso arriba dice cuál es el módulo siguiente; en el cuarto, al
+//   acabar su escena, dice «Sigue bajando» y la página sigue con normalidad.
+// - De la escena de natación solo se reproduce el principio (PARTE), para que no se haga larga.
 // - Hacia arriba, cada gesto vuelve un módulo (a su principio, sin vídeo) y desde el primero
 //   se sale por arriba.
 // Dentro de la sección la página no se mueve (ni da saltos de un módulo a otro): solo
@@ -40,6 +42,8 @@ const ESCENAS = 4;
 const FOTOGRAMAS = [100, 100, 50, 100]; // por escena (20 por segundo; la 3 dura 2,5 s)
 const FPS = 20;
 const VELOCIDAD = 2.5; // cuánto más rápida que el vídeo va la escena (5 s → 2 s)
+const PARTE = [0.7, 1, 1, 1]; // parte de cada escena que se reproduce (la de natación se hacía larga)
+const AVISO_DESDE = 0.3; // desde qué parte de la escena se avisa del módulo siguiente
 const PASO = 2; // fotogramas que se usan: uno de cada PASO (a esta velocidad sobran los demás)
 const ENFOQUE = [0.47, 0.47, 0.47, 0.5]; // x del socorrista (0-1) en cada escena
 const FUNDIDO = 350; // ms del fundido entre escenas
@@ -60,6 +64,9 @@ export function montarRecorrido(raiz) {
   const ctx = lienzo.getContext('2d');
   const pasos = [...raiz.querySelectorAll('.recorrido-paso')];
   const barras = [...raiz.querySelectorAll('.recorrido-progreso span')];
+  const aviso = raiz.querySelector('.recorrido-siguiente');
+  const avisoTexto = aviso?.querySelector('span');
+  let avisoActual = '';
   const reducido = matchMedia('(prefers-reduced-motion: reduce)').matches;
   raiz.classList.toggle('por-pasos', !reducido);
 
@@ -228,10 +235,10 @@ export function montarRecorrido(raiz) {
   function momento(ahora) {
     if (reproduccion) {
       const { n, reloj: pasado, dur } = reproduccion;
-      const t = Math.min(1, pasado / dur);
+      const t = Math.min(1, pasado / dur) * PARTE[n];
       const ultima = n === ESCENAS - 1;
       const mezcla = ultima ? 0 : Math.min(1, Math.max(0, (pasado - dur + SOLAPE) / FUNDIDO));
-      return { a: { e: n, t }, b: ultima ? null : { e: n + 1, t: 0 }, mezcla, acabada: ultima ? t >= 1 : mezcla >= 1 };
+      return { a: { e: n, t }, b: ultima ? null : { e: n + 1, t: 0 }, mezcla, acabada: ultima ? pasado >= dur : mezcla >= 1, avance: Math.min(1, pasado / dur) };
     }
     const k = progresoFundido(ahora);
     if (k < 1) return { a: fundido.desde, b: vista, mezcla: k };
@@ -260,10 +267,29 @@ export function montarRecorrido(raiz) {
       pasos.forEach((p, i) => p.classList.toggle('activo', i === activo));
     }
     barras.forEach((b, i) => {
-      const lleno = i < completados ? 1 : reproduccion && i === reproduccion.n ? Math.round(m.a.t * 1000) / 1000 : 0;
+      const lleno = i < completados ? 1 : reproduccion && i === reproduccion.n ? Math.round(m.avance * 1000) / 1000 : 0;
       if (llenas[i] !== lleno) { llenas[i] = lleno; b.style.setProperty('--lleno', String(lleno)); }
     });
+    ponerAviso(m);
     return m;
+  }
+
+  // Aviso arriba de lo que viene: mientras se reproduce una escena, el módulo siguiente; al
+  // acabar la última, que se puede seguir bajando.
+  function ponerAviso(m) {
+    if (!aviso) return;
+    let texto = '';
+    if (reproduccion && m.avance >= AVISO_DESDE && reproduccion.n < ESCENAS - 1) {
+      const n = reproduccion.n + 1;
+      texto = `Siguiente: Módulo ${n + 1} · ${pasos[n]?.dataset.corto ?? ''}`;
+    } else if (!reproduccion && completados >= ESCENAS && !reducido) {
+      texto = 'Sigue bajando';
+    }
+    if (texto && texto !== avisoActual) avisoTexto.textContent = texto;
+    if (texto !== avisoActual) {
+      avisoActual = texto;
+      aviso.classList.toggle('visible', Boolean(texto));
+    }
   }
 
   function cuadro(ahora) {
@@ -273,11 +299,14 @@ export function montarRecorrido(raiz) {
       const r = reproduccion;
       const dt = Math.min(64, Math.max(0, ahora - r.ultimo));
       r.ultimo = ahora;
-      const tope = r.reloj >= r.dur ? Infinity : listo(r.n) * r.dur;
+      const tope = r.reloj >= r.dur ? Infinity : Math.min(1, listo(r.n) / PARTE[r.n]) * r.dur;
       r.reloj = Math.max(r.reloj, Math.min(r.reloj + dt, tope));
     }
     const m = pintar(ahora);
-    if (reproduccion && m.acabada) terminarReproduccion();
+    if (reproduccion && m.acabada) {
+      terminarReproduccion();
+      pintar(ahora); // ya en su sitio: el texto, las barras y el aviso de lo que viene
+    }
     if (reproduccion || fundido) requestAnimationFrame(cuadro);
     else animando = false;
   }
@@ -305,7 +334,7 @@ export function montarRecorrido(raiz) {
     const n = modulo;
     fundido = null;
     vista = { e: n, t: 0 };
-    reproduccion = { n, reloj: 0, ultimo: performance.now(), dur: (FOTOGRAMAS[n] / FPS) * 1000 / VELOCIDAD };
+    reproduccion = { n, reloj: 0, ultimo: performance.now(), dur: (FOTOGRAMAS[n] * PARTE[n] / FPS) * 1000 / VELOCIDAD };
     adelantarEscena(n);
     animar();
   }
@@ -323,7 +352,7 @@ export function montarRecorrido(raiz) {
       adelantarEscena(modulo);
     } else {
       completados = ESCENAS;
-      vista = { e: n, t: 1 };
+      vista = { e: n, t: PARTE[n] };
       casa = 'fin';
       fijar();
       salir('abajo');
@@ -609,6 +638,9 @@ export function montarRecorrido(raiz) {
   }
 
   const alCambiarTamano = () => { sucio = true; animar(); };
+  // Si el lienzo cambia de tamaño (p. ej. al esconderse la barra de direcciones del móvil), se
+  // redibuja antes de que se vea: un lienzo al que se cambia el tamaño se queda en blanco.
+  const alRedimensionar = new ResizeObserver(() => { sucio = true; pintar(performance.now()); });
   // Los fotogramas se piden en cuanto se abre la portada; si está la intro, al acabar (para
   // no quitarle red), o antes si se baja hasta cerca de la sección.
   const carga = new IntersectionObserver((entradas) => {
@@ -628,6 +660,7 @@ export function montarRecorrido(raiz) {
     carga.disconnect();
     trasIntro.disconnect();
     vigia.disconnect();
+    alRedimensionar.disconnect();
     clearTimeout(temporizador);
     escuchar(false);
     deslizando = false;
@@ -651,6 +684,7 @@ export function montarRecorrido(raiz) {
     setTimeout(() => raiz.isConnected && empezarCarga(), 250);
   }
   vigia.observe(raiz);
+  alRedimensionar.observe(lienzo);
   addEventListener('scroll', alHacerScroll, { passive: true });
   addEventListener('scrollend', alAcabarScroll);
   addEventListener('resize', alCambiarTamano);

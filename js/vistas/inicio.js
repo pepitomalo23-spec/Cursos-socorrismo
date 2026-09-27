@@ -71,7 +71,7 @@ export async function render(el) {
         <canvas class="recorrido-lienzo" aria-hidden="true"></canvas>
         <div class="recorrido-textos">
           ${recorrido.map((m, i) => `
-            <div class="recorrido-paso color-${estiloCurso(i)[0]}">
+            <div class="recorrido-paso color-${estiloCurso(i)[0]}" data-corto="${MODULOS_CORTOS[i]}">
               <span class="recorrido-etiqueta">Módulo ${i + 1}</span>
               <h2>${esc(m.titulo)}</h2>
               ${m.descripcion ? `<p>${esc(m.descripcion)}</p>` : ''}
@@ -79,6 +79,7 @@ export async function render(el) {
             </div>`).join('')}
           <div class="recorrido-progreso" aria-hidden="true">${recorrido.map(() => '<span></span>').join('')}</div>
         </div>
+        <p class="recorrido-siguiente" aria-hidden="true"><span></span></p>
       </div>
     </section>
 

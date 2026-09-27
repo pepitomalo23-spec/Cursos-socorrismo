@@ -35,18 +35,12 @@
 }
 
 /* Hueco que queda entre la cabecera y, en el móvil, la barra de abajo (sus altos los mide
-   js/app.js). --hueco usa svh, que no cambia al esconderse la barra de direcciones del
-   móvil: sirve para medidas de las que depende el scroll. --hueco-visible usa dvh, lo que se
-   ve en cada momento: para lo que está fijo en pantalla. */
-:root {
-  --hueco: calc(100vh - var(--alto-cabecera, 61px) - var(--alto-barra, 0px));
-  --hueco-visible: var(--hueco);
-}
+   js/app.js). Usa svh, que no cambia al esconderse la barra de direcciones del móvil: así
+   ni el scroll ni lo que está fijo (el recorrido) cambian de tamaño a mitad (en el móvil,
+   ese cambio se veía como un fogonazo al seguir bajando tras el cuarto módulo). */
+:root { --hueco: calc(100vh - var(--alto-cabecera, 61px) - var(--alto-barra, 0px)); }
 @supports (height: 100svh) {
-  :root {
-    --hueco: calc(100svh - var(--alto-cabecera, 61px) - var(--alto-barra, 0px));
-    --hueco-visible: calc(100dvh - var(--alto-cabecera, 61px) - var(--alto-barra, 0px));
-  }
+  :root { --hueco: calc(100svh - var(--alto-cabecera, 61px) - var(--alto-barra, 0px)); }
 }
 
 :root[data-theme="light"] {
@@ -689,7 +683,7 @@ section.vacio p { margin-bottom: 22px; }
 .recorrido-fijo {
   position: sticky;
   top: var(--alto-cabecera, 0px);
-  height: var(--hueco-visible);
+  height: var(--hueco);
   overflow: hidden;
   background: #cfe3e6;
 }
@@ -744,6 +738,48 @@ section.vacio p { margin-bottom: 22px; }
   text-shadow: 0 2px 18px rgba(0, 0, 0, 0.35);
 }
 .recorrido-paso p { max-width: 38ch; margin: 0; color: rgba(255, 255, 255, 0.88); font-size: 15px; line-height: 1.5; }
+
+/* Aviso de lo que viene (js/recorrido.js): «Siguiente: Módulo N · nombre». */
+.recorrido-siguiente {
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 7px 14px 7px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 999px;
+  background: rgba(10, 10, 10, 0.6);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  color: #fff;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  opacity: 0;
+  transform: translate(-50%, -8px);
+  transition: opacity 0.25s ease, transform 0.25s ease;
+  pointer-events: none;
+}
+.recorrido-siguiente::after {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: translateY(-2px) rotate(45deg);
+  animation: recorrido-baja 1.1s ease-in-out infinite;
+}
+.recorrido-siguiente.visible { opacity: 1; transform: translate(-50%, 0); }
+@keyframes recorrido-baja { 50% { transform: translateY(1px) rotate(45deg); } }
+@media (max-width: 380px) { .recorrido-siguiente { font-size: 10.5px; letter-spacing: 0.05em; } }
+@media (prefers-reduced-motion: reduce) { .recorrido-siguiente { transition: none; } .recorrido-siguiente::after { animation: none; } }
 
 /* Recuadros «Temario» y «Test» de cada módulo: pequeños, para no tapar la escena. */
 .recorrido-accesos { display: flex; gap: 10px; margin-top: 18px; }

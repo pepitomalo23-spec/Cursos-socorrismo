@@ -132,6 +132,9 @@ alumno no está matriculado en ese módulo.
   saltos (solo cambian la escena y el texto), y los gestos solo se interceptan ahí (fuera, el
   scroll es el del navegador). «Desliza para empezar» y «Ve directo a un módulo» llevan a su
   módulo.
+- De la escena de natación solo se reproduce el principio (`PARTE`: 70 %, 1,4 s), para que no
+  se haga larga. Mientras se reproduce una escena, un aviso arriba dice cuál viene («Siguiente:
+  Módulo 2 · Prevención»); al acabar la cuarta, «Sigue bajando».
 - Fluidez: el avance lo marca el reloj y entre dos fotogramas se dibuja la mezcla de ambos; a
   esta velocidad basta uno de cada dos (10 por segundo de vídeo). Nunca se salta un fotograma
   que no ha llegado: si falta, la escena espera en el último (sin fogonazos). Al final, la
@@ -146,7 +149,7 @@ alumno no está matriculado en ese módulo.
   texto abajo y la escena arriba ocupando lo que queda (centrada en el socorrista), así que
   cabe en cualquier móvil; en pantallas bajas se quita la descripción.
 - Sin saltos en el móvil: la portada y el recorrido miden con `svh`, que no cambia al
-  esconderse la barra de direcciones (`--hueco`, `--hueco-visible`; los altos de la cabecera
+  esconderse la barra de direcciones (`--hueco`; los altos de la cabecera
   y de la barra de abajo los mide `js/app.js`).
 - Con «reducir movimiento» se ven cuatro imágenes fijas que cambian con el scroll (la sección
   es más larga), sin interceptar gestos.
