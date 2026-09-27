@@ -521,7 +521,7 @@ section.vacio p { margin-bottom: 22px; }
 }
 .portada-lema { max-width: 36ch; margin: 0; color: var(--muted); font-size: 16px; line-height: 1.55; }
 
-/* El logo de fondo (difuminado una sola vez, sin animar el desenfoque) y el que vuela. */
+/* El logo de fondo, difuminado una sola vez (el desenfoque no se anima). */
 .portada-logo {
   position: absolute;
   top: 50%;
@@ -531,37 +531,51 @@ section.vacio p { margin-bottom: 22px; }
   transform: translate(-50%, -58%);
   color: var(--text);
   pointer-events: none;
-  will-change: opacity;
 }
-.portada-logo svg { display: block; width: 100%; height: 100%; opacity: 0.22; filter: blur(7px); }
-.logo-vuelo {
+.portada-logo svg, .logo-vuelo-difuminado svg { display: block; width: 100%; height: 100%; opacity: 0.22; filter: blur(7px); }
+
+/* El que vuela (js/bienvenida.js): un solo logo con la copia difuminada y la nítida una encima
+   de otra. Con el vuelo montado, .portada-logo solo marca dónde empieza. Va entre la
+   cabecera (40) y el texto: detrás del «Bienvenido» y delante de la cabecera. Todo lleva
+   will-change: transform para que el navegador lo dibuje una vez y solo lo mueva y escale. */
+.logo-vuelo { display: none; color: var(--text); }
+.portada.con-vuelo .portada-logo { visibility: hidden; }
+.portada.con-vuelo .logo-vuelo {
+  display: block;
   position: fixed;
   top: 0;
   left: 0;
-  z-index: 0;
-  width: 980px;
+  z-index: 45;
   aspect-ratio: 1862 / 623;
-  color: var(--text);
-  opacity: 0;
   transform-origin: 0 0;
   pointer-events: none;
   will-change: transform, opacity;
 }
-.logo-vuelo.encima { z-index: 45; }
-.logo-vuelo.aterrizado, .logo-vuelo.quieto { visibility: hidden; }
-[data-theme="light"] .logo-vuelo, [data-theme="light"] .portada-logo { color: #04335d; }
+.logo-vuelo > div { position: absolute; inset: 0; will-change: transform, opacity; }
+.logo-vuelo-nitido { opacity: 0; }
+.logo-vuelo-nitido svg { width: 100%; height: 100%; }
+.portada.con-vuelo .portada-texto { z-index: 46; pointer-events: none; will-change: transform, opacity; }
+.portada.con-vuelo .portada-deslizar { will-change: opacity; }
+[data-theme="light"] :is(.portada-logo, .logo-vuelo) { color: #04335d; }
 
-/* Mientras el logo vuela, el de la cabecera no se ve y la cabecera (su borde, el menú y el
-   botón de perfil o tema) va apareciendo con --aparece; del todo al aterrizar. Su fondo es
-   el mismo que el de la portada, así que se deja opaco (tapa lo que pasa por debajo). En el móvil
-   el menú es la barra de abajo y se queda como está. */
-body:has(.logo-vuelo:not(.aterrizado):not(.quieto)) .marca-logo { opacity: 0; }
-body:has(.logo-vuelo:not(.aterrizado):not(.quieto)) .cabecera {
-  border-bottom-color: color-mix(in srgb, var(--line) calc(var(--aparece, 0) * 100%), transparent);
+/* Mientras el logo vuela, la cabecera solo es fondo (el mismo que la portada): el logo de la
+   cabecera, su borde, el menú y el botón de perfil o tema aparecen con el vuelo y no se
+   pueden pulsar hasta que aterriza. El borde pasa a ser una línea aparte para encenderlo
+   sin repintar. En el móvil el menú es la barra de abajo y se queda como está. */
+.cabecera.con-vuelo { border-bottom-color: transparent; }
+.cabecera.con-vuelo::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  bottom: -1px;
+  left: 0;
+  height: 1px;
+  background: var(--line);
+  pointer-events: none;
 }
-body:has(.logo-vuelo:not(.aterrizado):not(.quieto)) :is(.usuario, .tema-suelto) { opacity: var(--aparece, 0); pointer-events: none; }
+.cabecera.sin-aterrizar :is(.usuario, .tema-suelto) { pointer-events: none; }
 @media (min-width: 641px) {
-  body:has(.logo-vuelo:not(.aterrizado):not(.quieto)) .cabecera .nav { opacity: var(--aparece, 0); pointer-events: none; }
+  .cabecera.sin-aterrizar .nav { pointer-events: none; }
 }
 
 .portada-deslizar {

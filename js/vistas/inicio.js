@@ -37,7 +37,10 @@ export async function render(el) {
       <div class="portada-logo" aria-hidden="true">
         <svg viewBox="0 0 1862 623"><use href="assets/logo.svg#logo"/></svg>
       </div>
-      <svg class="logo-vuelo" viewBox="0 0 1862 623" aria-hidden="true"><use href="assets/logo.svg#logo"/></svg>
+      <div class="logo-vuelo" aria-hidden="true">
+        <div class="logo-vuelo-difuminado"><svg viewBox="0 0 1862 623"><use href="assets/logo.svg#logo"/></svg></div>
+        <div class="logo-vuelo-nitido"><svg viewBox="0 0 1862 623"><use href="assets/logo.svg#logo"/></svg></div>
+      </div>
       <div class="portada-texto">
         <p class="portada-lugar">${icono('salvavidas')} ${esc(ESCUELA.ciudad)}</p>
         <h1 class="portada-titulo">${u ? `Hola, ${esc(u.nombre.split(' ')[0])}` : 'Bienvenido'}</h1>
@@ -127,7 +130,7 @@ export async function render(el) {
       </div>
     </section>`;
 
-  montarBienvenida(el.querySelector('.portada'));
+  const desmontarBienvenida = montarBienvenida(el.querySelector('.portada'));
   const tour = montarRecorrido(el.querySelector('.recorrido'));
   el.querySelectorAll('[data-modulo]').forEach((boton) => boton.addEventListener('click', (e) => {
     e.preventDefault();
@@ -139,6 +142,9 @@ export async function render(el) {
     e.preventDefault();
     document.getElementById(e.currentTarget.dataset.desplazar).scrollIntoView({ behavior: 'smooth' });
   }));
+
+  // Al salir de la portada, la cabecera vuelve a ser la de siempre.
+  return { alSalir: desmontarBienvenida };
 }
 
 // Recuadros «Temario» y «Test» de un módulo dentro del recorrido.

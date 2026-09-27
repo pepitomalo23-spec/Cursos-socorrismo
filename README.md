@@ -99,10 +99,15 @@ y ejecutar `scripts/intro-fotogramas.sh fuentes/nuevo.mp4 v2`; después cambiar 
 Lo primero que se ve (tras la intro) es «Bienvenido» (o «Hola, nombre» con sesión) sobre el
 logo grande, difuminado y tenue de fondo, y un aviso animado para deslizar; la cabecera aún
 no enseña el menú ni el botón de perfil o tema. Al bajar, el logo vuela hasta su sitio en la
-cabecera y la cabecera aparece a la vez que aterriza. Para que vaya fluido solo se animan
-`transform` y `opacity`: el logo de fondo se difumina una vez y se apaga, mientras uno nítido
-(un `<svg>` fijo) se enciende y vuela. Con «reducir movimiento» el logo se queda quieto de
-fondo y la cabecera se ve desde el principio.
+cabecera y la cabecera aparece a la vez que aterriza. Es un solo logo: lleva dentro la copia
+difuminada y la nítida, una encima de otra, así que al empezar a bajar se enfoca sin moverse
+del sitio y luego vuela (nunca se ven dos). Para que vaya fluido solo se animan `transform` y
+`opacity`, con animaciones del navegador atadas al scroll (`ScrollTimeline` en Chrome, Edge
+y Safari 26: el navegador las mueve a la vez que la página, sin pasar por JavaScript); en el
+resto, cada fotograma solo las pone en su punto, sin medir nada. El logo va en línea recta,
+arranca y se posa frenando, y al llegar el de la cabecera toma su sitio en el mismo
+fotograma. Con «reducir movimiento» el logo se queda quieto de fondo y la cabecera se ve
+desde el principio.
 
 Justo antes del recorrido hay cuatro botones («¿Con prisa? Ve directo a un módulo») que
 bajan directamente a cada módulo del recorrido.
