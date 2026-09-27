@@ -7,7 +7,7 @@ import * as sesion from '../sesion.js';
 import { resumen } from '../estadisticas.js';
 import { emblemaCurso, esc, estiloCurso, etiquetaModulo, icono, nota, plural, titulo } from '../utiles.js';
 import { montarRecorrido } from '../recorrido.js';
-import { montarBienvenida } from '../bienvenida.js';
+import { bienvenidaVista, montarBienvenida } from '../bienvenida.js';
 
 // Textos del recorrido si falta algún módulo en los datos.
 const MODULOS_BASE = ['Natación', 'Prevención de accidentes en instalaciones acuáticas', 'Rescate de accidentados en instalaciones acuáticas', 'Primeros auxilios'];
@@ -32,8 +32,9 @@ export async function render(el) {
     };
   }));
 
+  const conBienvenida = !bienvenidaVista();
   el.innerHTML = `
-    <section class="portada">
+    <section class="portada" ${conBienvenida ? '' : 'hidden'}>
       <div class="portada-logo" aria-hidden="true">
         <svg viewBox="0 0 1862 623"><use href="assets/logo.svg#logo"/></svg>
       </div>
@@ -131,7 +132,7 @@ export async function render(el) {
       </div>
     </section>`;
 
-  const desmontarBienvenida = montarBienvenida(el.querySelector('.portada'));
+  const desmontarBienvenida = conBienvenida ? montarBienvenida(el.querySelector('.portada')) : () => {};
   const tour = montarRecorrido(el.querySelector('.recorrido'));
   el.querySelectorAll('[data-modulo]').forEach((boton) => boton.addEventListener('click', (e) => {
     e.preventDefault();

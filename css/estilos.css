@@ -588,11 +588,17 @@ section.vacio p { margin-bottom: 22px; }
   will-change: transform, opacity;
 }
 .logo-vuelo > div { position: absolute; inset: 0; will-change: transform, opacity; }
+/* La copia difuminada va en una caja más grande que el logo: Safari recorta el desenfoque en
+   el borde de la capa, y así le sobra sitio (se veía el logo cortado por arriba y abajo). */
+.logo-vuelo > .logo-vuelo-difuminado { inset: -32px; padding: 32px; }
 .logo-vuelo-nitido { opacity: 0; }
 .logo-vuelo-nitido svg { width: 100%; height: 100%; }
 .portada.con-vuelo .portada-texto { z-index: 46; pointer-events: none; will-change: transform, opacity; }
 .portada.con-vuelo .portada-deslizar { will-change: opacity; }
 [data-theme="light"] :is(.portada-logo, .logo-vuelo) { color: #04335d; }
+/* Tras pasarla una vez, la bienvenida se quita (js/bienvenida.js): arriba del todo quedan
+   los botones de ir directo a un módulo. */
+.portada[hidden] { display: none; }
 
 /* Mientras el logo vuela, la cabecera solo es fondo (el mismo que la portada): el logo de la
    cabecera, su borde, el menú y el botón de perfil o tema aparecen con el vuelo y no se

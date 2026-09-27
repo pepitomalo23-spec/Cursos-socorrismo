@@ -97,6 +97,13 @@ y ejecutar `scripts/intro-fotogramas.sh fuentes/nuevo.mp4 v2`; después cambiar 
 
 ## Bienvenida (portada)
 
+Sale una vez por visita: en cuanto se pasa (la portada ya no se ve y el scroll se ha parado),
+se quita sin que se mueva nada en pantalla y ya no se puede volver a ella; arriba del todo
+quedan los botones de los módulos, también al volver a la portada desde otra pantalla (se
+recuerda en `sessionStorage`). Si se para bajando con el logo ya en su sitio pero aún asoma
+un trozo, termina de bajar sola hasta los botones. La copia difuminada del logo va en una
+caja con margen, porque Safari recorta el desenfoque en el borde de la capa.
+
 Lo primero que se ve (tras la intro) es «Bienvenido» (o «Hola, nombre» con sesión) sobre el
 logo grande, difuminado y tenue de fondo, y un aviso animado para deslizar; la cabecera aún
 no enseña el menú ni el botón de perfil o tema. Al bajar, el logo vuela hasta su sitio en la

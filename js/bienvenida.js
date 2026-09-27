@@ -1,4 +1,6 @@
 // Bienvenida de la portada: el logo grande y difuminado de fondo, detrás del «Bienvenido».
+// Sale una vez por visita: al pasarla, se quita (vigilarPlegado) y la portada empieza en los
+// botones de los módulos.
 // Al hacer scroll se enfoca y vuela hasta su sitio en la esquina de la cabecera, y la cabecera
 // (menú, perfil o tema) aparece a la vez que aterriza.
 //
@@ -28,6 +30,18 @@ const APARECE_DESDE = 0.55; // desde qué parte del vuelo empieza a verse la cab
 const CURVA = 'cubic-bezier(0.42, 0, 0.58, 1)'; // arranca y llega frenando, sin acelerones
 const DURACION = 1000; // sin ScrollTimeline: cada animación dura 1 s y se coloca a mano
 
+const CLAVE_VISTA = 'escuela.bienvenida.vista'; // en sessionStorage: ya se ha pasado
+const QUIETO = 180; // ms sin scroll ni dedo para quitar la bienvenida (si no hay scrollend)
+
+// ¿Se ha pasado ya la bienvenida en esta visita? Entonces la portada empieza en los módulos.
+export function bienvenidaVista() {
+  try {
+    return sessionStorage.getItem(CLAVE_VISTA) === '1';
+  } catch {
+    return false;
+  }
+}
+
 const conScrollTimeline = typeof ScrollTimeline === 'function' && 'rangeStart' in Animation.prototype;
 
 // Devuelve la función que lo desmonta (al salir de la portada).
@@ -35,7 +49,8 @@ export function montarBienvenida(portada) {
   const hueco = portada?.querySelector('.portada-logo');
   const logo = portada?.querySelector('.logo-vuelo');
   const cabecera = document.querySelector('.cabecera');
-  if (!hueco || !logo || !cabecera || matchMedia('(prefers-reduced-motion: reduce)').matches) return () => {};
+  if (!hueco || !logo || !cabecera) return () => {};
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return vigilarPlegado(portada, cabecera, () => {});
 
   const difuminado = logo.querySelector('.logo-vuelo-difuminado');
   const nitido = logo.querySelector('.logo-vuelo-nitido');
@@ -153,10 +168,76 @@ export function montarBienvenida(portada) {
     portada.classList.remove('con-vuelo');
   }
 
+  const dejarDeVigilar = vigilarPlegado(portada, cabecera, desmontar);
+  const desmontarTodo = () => { desmontar(); dejarDeVigilar(); };
+
   construir(true);
   vigia.observe(portada);
   pintor.observe(cabecera, { childList: true });
   addEventListener('scroll', alDesplazar, { passive: true });
   addEventListener('resize', alCambiarTamano);
-  return desmontar;
+  return desmontarTodo;
+}
+
+// Una vez pasada (la portada ya no se ve y el scroll se ha parado), la bienvenida se quita: no
+// se puede volver a ella y arriba del todo quedan los botones de los módulos. Se quita sin que
+// se mueva nada en pantalla: la página sube lo mismo que medía. Se recuerda en la visita.
+function vigilarPlegado(portada, cabecera, alPlegar) {
+  let tocando = false;
+  let temporizador = 0;
+  let activo = true;
+  let ultimoY = scrollY;
+  let bajando = false;
+
+  function intentar() {
+    if (!activo || tocando) return;
+    if (!portada.isConnected) { parar(); return; }
+    const falta = portada.getBoundingClientRect().bottom - cabecera.getBoundingClientRect().bottom;
+    if (falta > 1) {
+      // Si se ha parado bajando con el logo ya en su sitio pero aún asoma un trozo de la
+      // bienvenida, termina de bajar hasta los botones (y al acabar, se quita).
+      if (bajando && scrollY >= portada.offsetHeight * VUELO - 1) scrollBy({ top: falta, behavior: 'smooth' });
+      return;
+    }
+    const siguiente = portada.nextElementSibling;
+    const antes = siguiente?.getBoundingClientRect().top ?? 0;
+    alPlegar();
+    portada.hidden = true;
+    const despues = siguiente?.getBoundingClientRect().top ?? 0;
+    scrollBy(0, despues - antes);
+    try { sessionStorage.setItem(CLAVE_VISTA, '1'); } catch { /* sin almacenamiento: solo esta vez */ }
+    parar();
+  }
+
+  const alDesplazar = () => {
+    if (scrollY !== ultimoY) bajando = scrollY > ultimoY;
+    ultimoY = scrollY;
+    if ('onscrollend' in window) return;
+    clearTimeout(temporizador);
+    temporizador = setTimeout(intentar, QUIETO);
+  };
+  const alTocar = () => { tocando = true; };
+  const alSoltar = (e) => {
+    if (e.touches.length) return;
+    tocando = false;
+    clearTimeout(temporizador);
+    temporizador = setTimeout(intentar, QUIETO);
+  };
+
+  function parar() {
+    activo = false;
+    clearTimeout(temporizador);
+    removeEventListener('scroll', alDesplazar);
+    removeEventListener('scrollend', intentar);
+    removeEventListener('touchstart', alTocar);
+    removeEventListener('touchend', alSoltar);
+    removeEventListener('touchcancel', alSoltar);
+  }
+
+  addEventListener('scroll', alDesplazar, { passive: true });
+  addEventListener('scrollend', intentar);
+  addEventListener('touchstart', alTocar, { passive: true });
+  addEventListener('touchend', alSoltar, { passive: true });
+  addEventListener('touchcancel', alSoltar, { passive: true });
+  return parar;
 }
