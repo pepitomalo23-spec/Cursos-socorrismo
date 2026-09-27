@@ -353,6 +353,10 @@ export function montarRecorrido(raiz) {
     } else {
       completados = ESCENAS;
       vista = { e: n, t: PARTE[n] };
+      // Para soltar la sección no se mueve la página (en Safari, ese salto se veía como un
+      // fogonazo): se quita el espacio de sobra de debajo, que no se ve, y el fin pasa a ser
+      // donde ya está la página.
+      raiz.classList.add('suelta');
       casa = 'fin';
       fijar();
       salir('abajo');
@@ -402,6 +406,9 @@ export function montarRecorrido(raiz) {
 
   function salir(lado) {
     fase = lado;
+    // Al salir por arriba vuelve el espacio de sobra (sirve para frenar la inercia al llegar);
+    // está debajo de lo que se ve, así que no mueve nada.
+    if (lado === 'arriba') raiz.classList.remove('suelta');
     retencion = null;
     escuchar(false);
     if (lado === 'arriba') {

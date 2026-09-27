@@ -680,6 +680,7 @@ section.vacio p { margin-bottom: 22px; }
 /* De módulo en módulo (lo normal): la página no se mueve dentro, así que basta algo más de una
    pantalla; lo que sobra frena la inercia al llegar. La larga es para «reducir movimiento». */
 .recorrido.por-pasos { height: calc(var(--hueco) * 1.5); }
+.recorrido.por-pasos.suelta { height: var(--hueco); } /* tras el cuarto módulo (js/recorrido.js) */
 .recorrido-fijo {
   position: sticky;
   top: var(--alto-cabecera, 0px);
